@@ -5,8 +5,8 @@
 
 
 int main() {
-    std::string text = "a123 = b12 - 1.12* 3.14 + 'Hello world'\nabc";
-    lexer lex(text);
+    std::string text = "Hello a1 = b3";
+    lexer lex("../file.mjs");
 
     while (not lex.is_empty()){
         std::cout << lex.get_lex() << std::endl;

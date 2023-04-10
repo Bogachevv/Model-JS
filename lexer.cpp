@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <functional>
 #include <utility>
+#include <sstream>
 
 enum class state{
     start,
@@ -96,33 +97,6 @@ state step(state prev_state, char ch){
     return delta_funcs.at(prev_state)(ch);
 }
 
-//void process(const std::string &seq){
-//    auto it = seq.begin();
-//    while (it != seq.end()){
-//        state st = state::start;
-//        while ((*it == ' ') and (it != seq.end())) ++it;
-//        auto beg = it;
-//
-//        while (it != seq.end()){ // lex processing loop
-//            if (not in_alphabet(*it)) break;
-//            auto new_st = step(st, *it);
-//            if (new_st == state::invalid){
-//                break;
-//            } else{
-//                st = new_st;
-//                ++it;
-//            }
-//        }
-//
-//        if (final_states.find(st) == final_states.end()){ // automate stopped in non-final state
-//            std::cout << "Invalid word\n";
-//            return;
-//        }
-//
-//        std::string res(beg, it);
-//        std::cout << res << std::endl;
-//    }
-//}
 
 // <<---- delta functions ---->>
 
@@ -211,36 +185,38 @@ state digit_exp(char ch){
 
 // <<!--- delta functions ---!>>
 
-lexer::lexer(std::string seq) : seq(std::move(seq)){
-    it = this->seq.begin();
+lexer::lexer(const std::string& path) : file(path){
+    if (file.bad()) throw std::runtime_error("Can't open file");
+    it = std::istreambuf_iterator<char>(file);
+    seq_end = std::istreambuf_iterator<char>();
 }
 
-bool lexer::is_empty() {
-    return it == seq.cend();
+lexer::~lexer() {
+    file.close();
 }
 
 std::string lexer::get_lex() {
     if (is_empty()) throw StopIteration();
 
     state st = state::start;
-    while ((it != seq.end()) and ((*it == ' ') or (*it == '\n'))) ++it;
-    auto beg = it;
+    while ((not is_empty()) and ((*it == ' ') or (*it == '\n'))) ++it;
+    std::stringstream res;
 
-    while (it != seq.end()){ // lex processing loop
+    while (not is_empty()){ // lex processing loop
         if (not in_alphabet(*it)) break;
         auto new_st = step(st, *it);
         if (new_st == state::invalid){
             break;
         } else{
             st = new_st;
+            res << *it;
             ++it;
         }
     }
 
     if (final_states.find(st) == final_states.end()){ // automate stopped in non-final state
-//        std::cout << "Invalid word\n";
         throw std::runtime_error("Invalid word");
     }
 
-    return {beg, it};
+    return res.str();
 }

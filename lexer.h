@@ -3,22 +3,22 @@
 #include <string>
 #include <fstream>
 #include <stdexcept>
+#include <iterator>
 
 struct StopIteration : std::exception{};
 
 class lexer {
-    std::string seq;
+//    std::string seq;
     std::string lex;
-    std::string::const_iterator it;
+    std::istreambuf_iterator<char> it, seq_end;
+    std::ifstream file;
 
 public:
-    explicit lexer(std::string seq);
+    explicit lexer(const std::string& path);
 
-    bool is_empty();
+    inline bool is_empty() { return it == seq_end; }
 
     std::string get_lex();
 
+    ~lexer();
 };
-
-//#include <iostream>
-//void process(const std::string &seq);
