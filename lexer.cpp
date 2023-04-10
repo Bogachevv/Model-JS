@@ -4,6 +4,7 @@
 #include <unordered_set>
 #include <unordered_map>
 #include <functional>
+#include <utility>
 
 enum class state{
     start,
@@ -95,33 +96,33 @@ state step(state prev_state, char ch){
     return delta_funcs.at(prev_state)(ch);
 }
 
-void process(const std::string &seq){
-    auto it = seq.begin();
-    while (it != seq.end()){
-        state st = state::start;
-        while ((*it == ' ') and (it != seq.end())) ++it;
-        auto beg = it;
-
-        while (it != seq.end()){ // lex processing loop
-            if (not in_alphabet(*it)) break;
-            auto new_st = step(st, *it);
-            if (new_st == state::invalid){
-                break;
-            } else{
-                st = new_st;
-                ++it;
-            }
-        }
-
-        if (final_states.find(st) == final_states.end()){ // automate stopped in non-final state
-            std::cout << "Invalid word\n";
-            return;
-        }
-
-        std::string res(beg, it);
-        std::cout << res << std::endl;
-    }
-}
+//void process(const std::string &seq){
+//    auto it = seq.begin();
+//    while (it != seq.end()){
+//        state st = state::start;
+//        while ((*it == ' ') and (it != seq.end())) ++it;
+//        auto beg = it;
+//
+//        while (it != seq.end()){ // lex processing loop
+//            if (not in_alphabet(*it)) break;
+//            auto new_st = step(st, *it);
+//            if (new_st == state::invalid){
+//                break;
+//            } else{
+//                st = new_st;
+//                ++it;
+//            }
+//        }
+//
+//        if (final_states.find(st) == final_states.end()){ // automate stopped in non-final state
+//            std::cout << "Invalid word\n";
+//            return;
+//        }
+//
+//        std::string res(beg, it);
+//        std::cout << res << std::endl;
+//    }
+//}
 
 // <<---- delta functions ---->>
 
@@ -206,4 +207,40 @@ state digit_exp(char ch){
     if (is_digit(ch)) return state::digit_exp;
 
     return state::invalid;
+}
+
+// <<!--- delta functions ---!>>
+
+lexer::lexer(std::string seq) : seq(std::move(seq)){
+    it = this->seq.begin();
+}
+
+bool lexer::is_empty() {
+    return it == seq.cend();
+}
+
+std::string lexer::get_lex() {
+    if (is_empty()) throw StopIteration();
+
+    state st = state::start;
+    while ((it != seq.end()) and ((*it == ' ') or (*it == '\n'))) ++it;
+    auto beg = it;
+
+    while (it != seq.end()){ // lex processing loop
+        if (not in_alphabet(*it)) break;
+        auto new_st = step(st, *it);
+        if (new_st == state::invalid){
+            break;
+        } else{
+            st = new_st;
+            ++it;
+        }
+    }
+
+    if (final_states.find(st) == final_states.end()){ // automate stopped in non-final state
+//        std::cout << "Invalid word\n";
+        throw std::runtime_error("Invalid word");
+    }
+
+    return {beg, it};
 }

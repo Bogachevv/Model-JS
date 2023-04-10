@@ -2,17 +2,23 @@
 
 #include <string>
 #include <fstream>
+#include <stdexcept>
+
+struct StopIteration : std::exception{};
 
 class lexer {
-    std::ifstream file;
+    std::string seq;
     std::string lex;
+    std::string::const_iterator it;
 
 public:
-//    lexer(std::string seq);
+    explicit lexer(std::string seq);
 
-//    std::string get_lex();
+    bool is_empty();
+
+    std::string get_lex();
 
 };
 
-#include <iostream>
-void process(const std::string &seq);
+//#include <iostream>
+//void process(const std::string &seq);
