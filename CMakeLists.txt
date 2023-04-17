@@ -3,4 +3,4 @@ project(MJS_interpreter)
 
 set(CMAKE_CXX_STANDARD 14)
 
-add_executable(MJS_interpreter main.cpp lexer.cpp lexer.h)
+add_executable(MJS_interpreter main.cpp lexer.cpp lexer.h lexeme.cpp)
