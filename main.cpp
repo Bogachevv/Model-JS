@@ -9,7 +9,8 @@ int main() {
     lexer lex("../file.mjs");
 
     while (not lex.is_empty()){
-        std::cout << lex.get_lex() << std::endl;
+        auto lexeme = lex.get_lex();
+        std::cout << lexeme.get_body() << "\t" << (int)lexeme.get_type() << std::endl;
     }
 
     return 0;

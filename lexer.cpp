@@ -195,7 +195,7 @@ lexer::~lexer() {
     file.close();
 }
 
-std::string lexer::get_lex() {
+lexeme lexer::get_lex() {
     if (is_empty()) throw StopIteration();
 
     state st = state::start;
@@ -218,5 +218,5 @@ std::string lexer::get_lex() {
         throw std::runtime_error("Invalid word");
     }
 
-    return res.str();
+    return lexeme(res.str());
 }

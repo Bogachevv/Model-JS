@@ -9,6 +9,8 @@
 
 struct StopIteration : std::exception{};
 
+class lexeme;
+
 class lexer {
 //    std::string seq;
     std::string lex;
@@ -20,90 +22,46 @@ public:
 
     inline bool is_empty() { return it == seq_end; }
 
-    std::string get_lex();
+    lexeme get_lex();
 
     ~lexer();
 };
 
-//TODO:
-//  implement separator lex
+enum class lexeme_type{
+    identifier, empty,
+    // <--- separators --->
+        semicolon, comma,
+        left_brace, right_brace,
+        left_parenthesis, right_parenthesis,
+        left_square_b, right_square_b,
+        plus, minus, mul, div, mod,
+        plus_plus, minus_minus,
+        mjs_and, mjs_or, mjs_not,
+        eq, neq, gr, ls, ge, le,
+        assign,
+    // <!-- separators --!>
+
+    // <--- service --->
+        var, function,
+        mjs_for, mjs_while, mjs_do, mjs_in,
+        mjs_if, mjs_else,
+        mjs_break, mjs_continue, mjs_return,
+    // <!-- service --!>
+
+    // <--- constant --->
+        mjs_true, mjs_false,
+        number, string
+    // <!-- constant --!>
+};
+
 class lexeme{
-public:
-    enum class lexeme_type{
-        identifier, service, constant, separator
-    };
-
-private:
-    std::string body;
     lexeme_type type;
+    std::string body;
 
 public:
-    lexeme(std::string lex_body, lexeme_type lex_type);
+    explicit lexeme(std::string body);
 
     lexeme_type get_type() const { return type; }
 
     const std::string& get_body() const { return body; }
-
-    virtual bool operator==(const lexeme& right) const = 0;
-
-    virtual bool operator!=(const lexeme& right) const = 0;
-
-    virtual ~lexeme() = default;
-};
-
-//TODO:
-// fill identifiers_table
-class identifier_lexeme : public lexeme {
-    static std::unordered_set<std::string> identifiers_table;
-
-public:
-    explicit identifier_lexeme(std::string identifier);
-
-    bool operator==(const lexeme& right) const override;
-
-    bool operator!=(const lexeme& right) const override { return not (this->operator==(right)); }
-
-    bool is_described();
-
-};
-
-class service_lexeme : public lexeme{
-    static const std::unordered_set<std::string> service_lexemes;
-
-public:
-    static bool is_service(const std::string& body);
-
-    explicit service_lexeme(std::string body);
-
-    bool operator==(const lexeme& right) const override;
-
-    bool operator!=(const lexeme& right) const override { return not (this->operator==(right)); }
-
-};
-
-class constant_lexeme : public lexeme{
-public:
-    enum class constant_type{
-        string, integer, real
-    };
-
-private:
-    constant_type const_type;
-
-
-public:
-    explicit constant_lexeme(std::string body);
-
-    int to_int() const;
-
-    double to_real() const;
-
-    std::string to_string() const;
-
-    constant_type get_const_type() const { return const_type; }
-
-    bool operator==(const lexeme& right) const override;
-
-    bool operator!=(const lexeme& right) const override { return not (this->operator==(right)); }
-
 };

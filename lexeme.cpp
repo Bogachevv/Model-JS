@@ -1,125 +1,54 @@
 #include <utility>
+#include <unordered_map>
 
 #include "lexer.h"
 
-lexeme::lexeme(std::string lex_body, lexeme::lexeme_type lex_type) :
-    body(std::move(lex_body)), type(lex_type)
-{
+static const std::unordered_map<std::string, lexeme_type> str_to_lex_type_map = {
+        {";", lexeme_type::semicolon}, {",", lexeme_type::comma},
+        {"{", lexeme_type::left_brace}, {"}", lexeme_type::right_brace},
+        {"(", lexeme_type::left_parenthesis}, {")", lexeme_type::right_parenthesis},
+        {"[", lexeme_type::left_square_b}, {"]", lexeme_type::right_square_b},
+        {"+", lexeme_type::plus},
+        {"-", lexeme_type::minus},
+        {"*", lexeme_type::mul},
+        {"/", lexeme_type::div},
+        {"%", lexeme_type::mod},
+        {"++", lexeme_type::plus_plus}, {"--", lexeme_type::minus_minus},
+        {"and", lexeme_type::mjs_and},
+        {"or", lexeme_type::mjs_or},
+        {"not", lexeme_type::mjs_not},
+        {"==", lexeme_type::eq}, {"!=", lexeme_type::neq},
+        {">", lexeme_type::gr}, {"<", lexeme_type::ls},
+        {">=", lexeme_type::ge}, {"<=", lexeme_type::le},
+        {"=", lexeme_type::assign},
 
-}
-
-// <--- identifier_lexeme --->
-
-std::unordered_set<std::string> identifier_lexeme::identifiers_table;
-
-identifier_lexeme::identifier_lexeme(std::string identifier) :
-        lexeme(std::move(identifier), lexeme_type::identifier)
-{
-    identifiers_table.insert(get_body());
-}
-
-bool identifier_lexeme::operator==(const lexeme &right) const {
-    if (right.get_type() != get_type()) return false;
-
-    return get_body() == right.get_body();
-}
-
-bool identifier_lexeme::is_described() {
-    return (identifiers_table.find(get_body()) != identifiers_table.end());
-}
-
-// <!-- identifier_lexeme --!>
-
-
-
-// <--- service_lexeme --->
-
-const std::unordered_set<std::string> service_lexeme::service_lexemes = {
-
+        {"var", lexeme_type::var},
+        {"function", lexeme_type::function},
+        {"for", lexeme_type::mjs_for},
+        {"while", lexeme_type::mjs_while},
+        {"do", lexeme_type::mjs_do},
+        {"in", lexeme_type::mjs_in},
+        {"if", lexeme_type::mjs_if},
+        {"else", lexeme_type::mjs_else},
+        {"break", lexeme_type::mjs_break},
+        {"continue", lexeme_type::mjs_continue},
+        {"return", lexeme_type::mjs_return},
 };
 
-bool service_lexeme::is_service(const std::string &body) {
-    return service_lexemes.find(body) != service_lexemes.end();
+lexeme_type str_to_lex_type(const std::string& str){
+    if (str.length() == 0) return lexeme_type::empty;
+
+    auto it = str_to_lex_type_map.find(str);
+    if (it != str_to_lex_type_map.end()) return it->second;
+
+    if (std::isdigit(str[0]) or (str[0] == '+') or (str[0] == '-')) return lexeme_type::number;
+    if ((str[0] == '\'') or ((str[0] == '\"'))) return lexeme_type::string;
+    if (str == "false") return lexeme_type::mjs_false;
+    if (str == "true") return lexeme_type::mjs_true;
+
+    return lexeme_type::identifier;
 }
 
-service_lexeme::service_lexeme(std::string body) :
-        lexeme(std::move(body), lexeme::lexeme_type::service)
-{
-    if (not is_service(get_body()))
-        throw std::runtime_error(get_body() + std::string(" is not service lexeme; \n"
-                                                          "Use service_lexeme::is_service(std::string&) before constructing"));
+lexeme::lexeme(std::string body) : body(std::move(body)) {
+    type = str_to_lex_type(this->body);
 }
-
-bool service_lexeme::operator==(const lexeme &right) const {
-    if (right.get_type() != get_type()) return false;
-
-    return get_body() == right.get_body();
-}
-
-// <!-- service_lexeme --!>
-
-
-
-// <--- constant_lexeme --->
-
-constant_lexeme::constant_type get_const_type(const std::string& str){
-    if ((str.at(0) == '\'') or (str.at(0) == '\"')) return constant_lexeme::constant_type::string;
-    if ((str.find('.') != std::string::npos) or
-        (str.find('e') != std::string::npos) or
-        (str.find('E') != std::string::npos))
-        return constant_lexeme::constant_type::real;
-
-    return constant_lexeme::constant_type::integer;
-}
-
-constant_lexeme::constant_lexeme(std::string body) :
-        lexeme(std::move(body), lexeme::lexeme_type::constant)
-{
-    const_type = ::get_const_type(get_body());
-}
-
-int constant_lexeme::to_int() const {
-    return std::stoi(get_body());
-}
-
-double constant_lexeme::to_real() const {
-    return std::stod(get_body());
-}
-
-std::string constant_lexeme::to_string() const {
-    const std::string& body = get_body();
-
-    return {body.begin() + 1, body.end() - 1};
-}
-
-bool strcmp(std::string::const_iterator lb, std::string::const_iterator le,
-            std::string::const_iterator rb, std::string::const_iterator re)
-{
-    while ((lb != le) and (rb != re)){
-        if (*lb != *rb) return false;
-        ++lb;
-        ++rb;
-    }
-    if ((lb == le) and (rb == re)) return true;
-    return false;
-}
-
-bool constant_lexeme::operator==(const lexeme &right) const {
-    if (right.get_type() != get_type()) return false;
-    auto right_casted = dynamic_cast<const constant_lexeme&>(right);
-    if (right_casted.get_const_type() != get_const_type()) return false;
-
-    switch (get_const_type()) {
-        case constant_type::integer:
-            return right_casted.to_int() == to_int();
-
-        case constant_type::real:
-            return right_casted.to_real() == to_real();
-
-        case constant_type::string:
-            return strcmp(get_body().begin()+1, get_body().end()-1,
-                          right_casted.get_body().begin()+1, right_casted.get_body().end()-1);
-    }
-}
-
-// <!-- constant_lexeme --!>
