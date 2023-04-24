@@ -31,9 +31,9 @@ enum class lexeme_type{
     identifier, empty,
     // <--- separators --->
         semicolon, comma,
-        left_brace, right_brace,
-        left_parenthesis, right_parenthesis,
-        left_square_b, right_square_b,
+        left_brace, right_brace, // {}
+        left_parenthesis, right_parenthesis, // ()
+        left_square_b, right_square_b, // []
         plus, minus, mul, div, mod,
         plus_plus, minus_minus,
         mjs_and, mjs_or, mjs_not,
