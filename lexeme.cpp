@@ -49,6 +49,14 @@ lexeme_type str_to_lex_type(const std::string& str){
     return lexeme_type::identifier;
 }
 
+const lexeme lexeme::eof(lexeme_type::eof, "");
+
+lexeme::lexeme(lexeme_type type, std::string body) :
+    type(type), body(std::move(body))
+{
+
+}
+
 lexeme::lexeme(std::string body) : body(std::move(body)) {
     type = str_to_lex_type(this->body);
 }

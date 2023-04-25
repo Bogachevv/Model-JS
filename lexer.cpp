@@ -9,6 +9,7 @@
 
 enum class state{
     start,
+    separator,
     id,
     eq, eq_sec,
     plus, plus_sec,
@@ -25,6 +26,7 @@ enum class state{
 typedef std::function<state (char)> delta_func_t;
 
 static const std::unordered_set<state> final_states = {state::id,
+                                                       state::separator,
                                                        state::eq, state::eq_sec,
                                                        state::plus, state::plus_sec,
                                                        state::minus, state::minus_sec,
@@ -50,6 +52,7 @@ state terminal(char ch);
 
 static const std::unordered_map<state, delta_func_t> delta_funcs{
         {state::start, start},
+        {state::separator, terminal},
         {state::id, id_func},
         {state::eq, one_sym_delta('=', state::eq_sec)},
         {state::eq_sec, terminal},
@@ -76,7 +79,8 @@ static const std::unordered_map<state, delta_func_t> delta_funcs{
 
 bool in_alphabet(char ch){
     static const std::unordered_set<char> special = {'_', '*', '/', '+', '-', '.', '\'', '\"',
-                                                     '|', '&', '>', '<', '!', '=', ' '};
+                                                     '|', '&', '>', '<', '!', '=', ' ',
+                                                     '(', ')', '[', ']', '{', '}', ';', ','};
     if (special.find(ch) != special.end()) return true;
     return
         ((ch >= 'a') and (ch <= 'z')) or
@@ -90,6 +94,13 @@ bool is_digit(char ch){
 
 bool is_letter(char ch){
     return ((ch >= 'a') and (ch <= 'z')) or ((ch >= 'A') and (ch <= 'Z'));
+}
+
+bool is_separator(char ch){
+    static const std::unordered_set<char> separators = {'(', ')', '[', ']', '{', '}',
+                                                     ';', ',', '.'};
+
+    return separators.find(ch) != separators.end();
 }
 
 state step(state prev_state, char ch){
@@ -119,6 +130,7 @@ state start(char ch){
     if (ch == '\"') return state::dquot_first;
     if (ch == '-') return state::minus;
     if (is_digit(ch)) return state::digit_beg;
+    if (is_separator(ch)) return state::separator;
 
     return state::invalid;
 }
@@ -196,7 +208,8 @@ lexer::~lexer() {
 }
 
 lexeme lexer::get_lex() {
-    if (is_empty()) throw StopIteration();
+//    if (is_empty()) throw StopIteration();
+    if (is_empty()) return lexeme::eof;
 
     state st = state::start;
     while ((not is_empty()) and ((*it == ' ') or (*it == '\n'))) ++it;

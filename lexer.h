@@ -28,7 +28,7 @@ public:
 };
 
 enum class lexeme_type{
-    identifier, empty,
+    identifier, empty, eof,
     // <--- separators --->
         semicolon, comma,
         left_brace, right_brace, // {}
@@ -58,7 +58,10 @@ class lexeme{
     lexeme_type type;
     std::string body;
 
+    lexeme(lexeme_type type, std::string body);
 public:
+    static const lexeme eof;
+
     explicit lexeme(std::string body);
 
     lexeme_type get_type() const { return type; }

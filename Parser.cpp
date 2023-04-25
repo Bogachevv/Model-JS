@@ -167,12 +167,12 @@ void parser::error(const std::string &msg) {
 }
 
 bool parser::next(bool silent) {
-    if (lex.is_empty()) {
-        if (silent) return false;
-        throw parse_error("Unexpected end of file");
-    }
+//    if (lex.is_empty()) {
+//        if (silent) return false;
+//        throw parse_error("Unexpected end of file");
+//    }
     cur = lex.get_lex();
-    return true;
+    return cur.get_type() == lexeme_type::eof;
 }
 
 bool parser::analyze() {
@@ -202,12 +202,29 @@ void parser::Func() {
     if (cur.get_type() != lexeme_type::left_parenthesis) error();
     next();
 
-    do{
-        if (cur.get_type() != lexeme_type::identifier) error();
-        std::cout << cur.get_body() << ", ";
+//    do{
+//        if (cur.get_type() != lexeme_type::identifier) error();
+//        std::cout << cur.get_body() << ", ";
+//        next();
+//    } while (cur.get_type() != lexeme_type::right_parenthesis);
+//    next();
+//    std::cout << std::endl;
+
+    if (cur.get_type() == lexeme_type::identifier){
+        std::cout << cur.get_body();
         next();
-    } while (cur.get_type() != lexeme_type::right_parenthesis);
+
+        while (cur.get_type() == lexeme_type::comma){
+            next();
+            if (cur.get_type() != lexeme_type::identifier) error();
+            std::cout << ", " << cur.get_body();
+            next();
+        }
+    }
+
+    if (cur.get_type() != lexeme_type::right_parenthesis) error();
     next();
+
     std::cout << std::endl;
 
     if (in_set(Scope_first(), cur.get_type())) Scope();
@@ -353,4 +370,147 @@ void parser::Loop() {
         next();
     }
     else error();
+}
+
+void parser::Jump() {
+    switch (cur.get_type()) {
+        case lexeme_type::mjs_break:
+        case lexeme_type::comma:
+            next();
+            break;
+        case lexeme_type::mjs_return:
+            next();
+            if (in_set(Expr_first(), cur.get_type())) Expr();
+            break;
+        default:
+            error();
+    }
+    if (cur.get_type() != lexeme_type::semicolon) error();
+    next();
+}
+
+void parser::OpExpr() {
+    if (in_set(Expr_first(), cur.get_type())) Expr();
+    else error();
+}
+
+void parser::Expr() {
+    if (in_set(Const_first(), cur.get_type())) return Const();
+    if (in_set(Arifm_first(), cur.get_type())) return Arifm();
+
+    if (cur.get_type() != lexeme_type::identifier) error();
+    next();
+    if (cur.get_type() == lexeme_type::assign){ // <Name> = <Expr>
+        next();
+        if (in_set(Expr_first(), cur.get_type())) Expr();
+    }
+    else if (cur.get_type() == lexeme_type::left_parenthesis){ // <Name>(<Expr> {, <Expr>})
+        next();
+
+        if (in_set(Expr_first(), cur.get_type())){
+            Expr();
+            while (cur.get_type() == lexeme_type::comma){
+                next();
+                if (in_set(Expr_first(), cur.get_type())) Expr();
+            }
+        }
+
+        if (cur.get_type() != lexeme_type::right_parenthesis) error();
+        next();
+    }
+    else error();
+}
+
+void parser::Const() {
+    switch (cur.get_type()) {
+        case lexeme_type::string:
+        case lexeme_type::number:
+        case lexeme_type::mjs_false:
+        case lexeme_type::mjs_true:
+            next();
+            break;
+        default:
+            error();
+    }
+}
+
+void parser::Arifm() {
+    if (in_set(A1_first(), cur.get_type())) A1();
+    else error();
+
+    switch (cur.get_type()) {
+        case lexeme_type::eq:
+        case lexeme_type::neq:
+        case lexeme_type::le:
+        case lexeme_type::ge:
+        case lexeme_type::gr:
+        case lexeme_type::ls:
+            next();
+            if (in_set(A1_first(), cur.get_type())) A1();
+            else error();
+            break;
+        default:
+            break;
+    }
+}
+
+void parser::A1() {
+    if (in_set(A2_first(), cur.get_type())) A2();
+    else error();
+
+    while (
+            (cur.get_type() == lexeme_type::plus) or
+            (cur.get_type() == lexeme_type::minus) or
+            (cur.get_type() == lexeme_type::mjs_or))
+    {
+        next();
+        if (in_set(A2_first(), cur.get_type())) A2();
+        else error();
+    }
+}
+
+void parser::A2() {
+    if (in_set(A3_first(), cur.get_type())) A3();
+    else error();
+
+    while (
+            (cur.get_type() == lexeme_type::mul) or
+            (cur.get_type() == lexeme_type::div) or
+            (cur.get_type() == lexeme_type::mod) or
+            (cur.get_type() == lexeme_type::mjs_and))
+    {
+        next();
+        if (in_set(A3_first(), cur.get_type())) A3();
+        else error();
+    }
+}
+
+void parser::A3() {
+    if (in_set(Expr_first(), cur.get_type())) return Expr();
+
+    if (in_set(A3_first(), cur.get_type())){ // <A3>++, <A3>--
+        A3();
+        switch (cur.get_type()) {
+            case lexeme_type::minus_minus:
+            case lexeme_type::plus_plus:
+                next();
+                break;
+            default:
+                error();
+        }
+    }
+    else{ // not <A3>, ++<A3>, --<A3>
+        switch (cur.get_type()) {
+            case lexeme_type::mjs_not:
+            case lexeme_type::plus_plus:
+            case lexeme_type::minus_minus:
+                next();
+                break;
+            default:
+                error();
+        }
+
+        if (in_set(A3_first(), cur.get_type())) A3();
+        else error();
+    }
 }
