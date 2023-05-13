@@ -4,6 +4,9 @@
 #include "lexer.h"
 #include "parser.h"
 
+using std::cout;
+using std::endl;
+
 int main() {
     std::string path = "../file.mjs";
     lexer lex(path);
@@ -17,6 +20,8 @@ int main() {
 
     parser p(path);
     p.analyze();
+
+    cout << endl << "Success" << endl;
 
     return 0;
 }

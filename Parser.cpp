@@ -38,12 +38,21 @@ const std::unordered_set<lexeme_type>& If_first();
 const std::unordered_set<lexeme_type>& Loop_first();
 const std::unordered_set<lexeme_type>& Jump_first();
 const std::unordered_set<lexeme_type>& OpExpr_first();
-const std::unordered_set<lexeme_type>& Expr_first();
 const std::unordered_set<lexeme_type>& Const_first();
-const std::unordered_set<lexeme_type>& Arifm_first();
-const std::unordered_set<lexeme_type>& A1_first();
-const std::unordered_set<lexeme_type>& A2_first();
-const std::unordered_set<lexeme_type>& A3_first();
+const std::unordered_set<lexeme_type>& Expr_first();
+const std::unordered_set<lexeme_type>& E1_first();
+const std::unordered_set<lexeme_type>& E2_first();
+const std::unordered_set<lexeme_type>& E3_first();
+const std::unordered_set<lexeme_type>& E4_first();
+const std::unordered_set<lexeme_type>& E5_first();
+const std::unordered_set<lexeme_type>& E6_first();
+const std::unordered_set<lexeme_type>& E7_first();
+const std::unordered_set<lexeme_type>& E8_first();
+const std::unordered_set<lexeme_type>& E9_first();
+const std::unordered_set<lexeme_type>& E10_first();
+const std::unordered_set<lexeme_type>& E11_first();
+const std::unordered_set<lexeme_type>& E12_first();
+
 
 const std::unordered_set<lexeme_type>& S_first(){
     static std::unordered_set<lexeme_type> S_first_set;
@@ -112,16 +121,6 @@ const std::unordered_set<lexeme_type>& OpExpr_first(){
     return Expr_first();
 }
 
-const std::unordered_set<lexeme_type>& Expr_first(){
-    static std::unordered_set<lexeme_type> Expr_first_set;
-    if (Expr_first_set.empty()){
-        Expr_first_set = {lexeme_type::identifier};
-        Expr_first_set = merge_sets({Expr_first_set, Const_first()});
-    }
-
-    return Expr_first_set;
-}
-
 const std::unordered_set<lexeme_type>& Const_first(){
     static const std::unordered_set<lexeme_type> Const_first_set =
             {lexeme_type::number, lexeme_type::string,
@@ -130,25 +129,79 @@ const std::unordered_set<lexeme_type>& Const_first(){
     return Const_first_set;
 }
 
-const std::unordered_set<lexeme_type>& Arifm_first(){
-    return A1_first();
+const std::unordered_set<lexeme_type>& Expr_first(){
+    return E1_first();
 }
 
-const std::unordered_set<lexeme_type>& A1_first(){
-    return A2_first();
+const std::unordered_set<lexeme_type>& E1_first(){
+    return E2_first();
 }
-const std::unordered_set<lexeme_type>& A2_first(){
-    return A3_first();
+
+const std::unordered_set<lexeme_type>& E2_first(){
+    return E3_first();
 }
-const std::unordered_set<lexeme_type>& A3_first(){
-    static std::unordered_set<lexeme_type> A3_first_set;
-    if (A3_first_set.empty()){
-        A3_first_set = {lexeme_type::mjs_not, lexeme_type::plus_plus, lexeme_type::minus_minus};
-        A3_first_set = merge_sets({A3_first_set, Expr_first()});
+
+const std::unordered_set<lexeme_type>& E3_first(){
+    return E4_first();
+}
+
+const std::unordered_set<lexeme_type>& E4_first(){
+    return E5_first();
+}
+
+const std::unordered_set<lexeme_type>& E5_first(){
+    return E6_first();
+}
+
+const std::unordered_set<lexeme_type>& E6_first(){
+    return E7_first();
+}
+
+const std::unordered_set<lexeme_type>& E7_first(){
+    return E8_first();
+}
+
+const std::unordered_set<lexeme_type>& E8_first(){
+    static std::unordered_set<lexeme_type> E8_first_set;
+    if (E8_first_set.empty()){
+        E8_first_set = {lexeme_type::mjs_not, lexeme_type::plus, lexeme_type::minus,
+                         lexeme_type::plus_plus, lexeme_type::minus_minus};
+        E8_first_set = merge_sets({E8_first_set, E9_first()});
     }
 
-    return A3_first_set;
+    //TODO:
+    // add typeof
+
+    return E8_first_set;
 }
+
+const std::unordered_set<lexeme_type>& E9_first(){
+    return E10_first();
+}
+
+const std::unordered_set<lexeme_type>& E10_first(){
+    static std::unordered_set<lexeme_type> E10_first_set;
+    if (E10_first_set.empty()){
+        E10_first_set = {lexeme_type::identifier};
+        E10_first_set = merge_sets({E10_first_set, E11_first()});
+    }
+
+    return E10_first_set;
+}
+
+const std::unordered_set<lexeme_type>& E11_first(){
+    static std::unordered_set<lexeme_type> E11_first_set;
+    if (E11_first_set.empty()){
+        E11_first_set = {lexeme_type::left_parenthesis};
+        E11_first_set = merge_sets({E11_first_set, Const_first()});
+    }
+
+    return E11_first_set;
+}
+
+
+
+
 
 struct parse_error : std::runtime_error{
     explicit parse_error(const std::string& msg) : std::runtime_error(msg) {}
@@ -394,33 +447,6 @@ void parser::OpExpr() {
     else error();
 }
 
-void parser::Expr() {
-    if (in_set(Const_first(), cur.get_type())) return Const();
-    if (in_set(Arifm_first(), cur.get_type())) return Arifm();
-
-    if (cur.get_type() != lexeme_type::identifier) error();
-    next();
-    if (cur.get_type() == lexeme_type::assign){ // <Name> = <Expr>
-        next();
-        if (in_set(Expr_first(), cur.get_type())) Expr();
-    }
-    else if (cur.get_type() == lexeme_type::left_parenthesis){ // <Name>(<Expr> {, <Expr>})
-        next();
-
-        if (in_set(Expr_first(), cur.get_type())){
-            Expr();
-            while (cur.get_type() == lexeme_type::comma){
-                next();
-                if (in_set(Expr_first(), cur.get_type())) Expr();
-            }
-        }
-
-        if (cur.get_type() != lexeme_type::right_parenthesis) error();
-        next();
-    }
-    else error();
-}
-
 void parser::Const() {
     switch (cur.get_type()) {
         case lexeme_type::string:
@@ -434,83 +460,196 @@ void parser::Const() {
     }
 }
 
-void parser::Arifm() {
-    if (in_set(A1_first(), cur.get_type())) A1();
+void parser::Expr() {
+    if (in_set(E1_first(), cur.get_type())) E1();
+    else error();
+
+    while (cur.get_type() == lexeme_type::comma){
+        next();
+        if (in_set(E1_first(), cur.get_type())) E1();
+        else error();
+    }
+}
+
+void parser::E1() {
+    if (in_set(E2_first(), cur.get_type())) E2();
+    else error();
+
+    while (cur.get_type() == lexeme_type::assign){
+        next();
+        if (in_set(E2_first(), cur.get_type())) E2();
+        else error();
+    }
+}
+
+void parser::E2() {
+    if (in_set(E3_first(), cur.get_type())) E3();
+    else error();
+
+    while (cur.get_type() == lexeme_type::mjs_or){
+        next();
+        if (in_set(E3_first(), cur.get_type())) E3();
+        else error();
+    }
+}
+
+void parser::E3() {
+    if (in_set(E4_first(), cur.get_type())) E4();
+    else error();
+
+    while (cur.get_type() == lexeme_type::mjs_and){
+        next();
+        if (in_set(E4_first(), cur.get_type())) E4();
+        else error();
+    }
+}
+
+void parser::E4() {
+    if (in_set(E5_first(), cur.get_type())) E5();
     else error();
 
     switch (cur.get_type()) {
         case lexeme_type::eq:
         case lexeme_type::neq:
-        case lexeme_type::le:
-        case lexeme_type::ge:
-        case lexeme_type::gr:
-        case lexeme_type::ls:
             next();
-            if (in_set(A1_first(), cur.get_type())) A1();
+            if (in_set(E5_first(), cur.get_type())) E5();
             else error();
+            break;
+
+        default:
+            break;
+    }
+
+    //TODO:
+    //  add ===, !==
+
+}
+
+void parser::E5() {
+    if (in_set(E6_first(), cur.get_type())) E6();
+    else error();
+
+    switch (cur.get_type()) {
+        case lexeme_type::ls:
+        case lexeme_type::le:
+        case lexeme_type::gr:
+        case lexeme_type::ge:
+            next();
+            if (in_set(E6_first(), cur.get_type())) E6();
+            else error();
+            break;
+
+        default:
+            break;
+    }
+}
+
+void parser::E6() {
+    if (in_set(E7_first(), cur.get_type())) E7();
+    else error();
+
+    switch (cur.get_type()) {
+        case lexeme_type::plus:
+        case lexeme_type::minus:
+            next();
+            if (in_set(E7_first(), cur.get_type())) E7();
+            else error();
+            break;
+
+        default:
+            break;
+    }
+}
+
+void parser::E7() {
+    if (in_set(E8_first(), cur.get_type())) E8();
+    else error();
+
+    switch (cur.get_type()) {
+        case lexeme_type::mul:
+        case lexeme_type::div:
+        case lexeme_type::mod:
+            next();
+            if (in_set(E8_first(), cur.get_type())) E8();
+            else error();
+            break;
+
+        default:
+            break;
+    }
+}
+
+void parser::E8() {
+    bool loop_cond = true;
+    while (loop_cond){
+        switch (cur.get_type()) {
+            case lexeme_type::mjs_not:
+            case lexeme_type::plus:
+            case lexeme_type::minus:
+            case lexeme_type::plus_plus:
+            case lexeme_type::minus_minus:
+                next();
+                break;
+            default:
+                loop_cond=false;
+                break;
+        }
+    }
+
+    if (in_set(E9_first(), cur.get_type())) E9();
+    else error();
+}
+
+void parser::E9() {
+    if (in_set(E10_first(), cur.get_type())) E10();
+    else error();
+
+    switch (cur.get_type()) {
+        case lexeme_type::plus_plus:
+        case lexeme_type::minus_minus:
+            next();
             break;
         default:
             break;
     }
 }
 
-void parser::A1() {
-    if (in_set(A2_first(), cur.get_type())) A2();
-    else error();
-
-    while (
-            (cur.get_type() == lexeme_type::plus) or
-            (cur.get_type() == lexeme_type::minus) or
-            (cur.get_type() == lexeme_type::mjs_or))
-    {
+void parser::E10() {
+    if (cur.get_type() == lexeme_type::identifier){
         next();
-        if (in_set(A2_first(), cur.get_type())) A2();
-        else error();
-    }
-}
-
-void parser::A2() {
-    if (in_set(A3_first(), cur.get_type())) A3();
-    else error();
-
-    while (
-            (cur.get_type() == lexeme_type::mul) or
-            (cur.get_type() == lexeme_type::div) or
-            (cur.get_type() == lexeme_type::mod) or
-            (cur.get_type() == lexeme_type::mjs_and))
-    {
-        next();
-        if (in_set(A3_first(), cur.get_type())) A3();
-        else error();
-    }
-}
-
-void parser::A3() {
-    if (in_set(Expr_first(), cur.get_type())) return Expr();
-
-    if (in_set(A3_first(), cur.get_type())){ // <A3>++, <A3>--
-        A3();
         switch (cur.get_type()) {
-            case lexeme_type::minus_minus:
-            case lexeme_type::plus_plus:
+            case lexeme_type::left_parenthesis:
+                next();
+                if (in_set(Expr_first(), cur.get_type())) Expr();
+                else error();
+                if (cur.get_type() != lexeme_type::right_parenthesis) error();
+                next();
+                break;
+            case lexeme_type::left_square_b:
+                next();
+                if (in_set(Expr_first(), cur.get_type())) Expr();
+                else error();
+                if (cur.get_type() != lexeme_type::right_square_b) error();
                 next();
                 break;
             default:
-                error();
-        }
-    }
-    else{ // not <A3>, ++<A3>, --<A3>
-        switch (cur.get_type()) {
-            case lexeme_type::mjs_not:
-            case lexeme_type::plus_plus:
-            case lexeme_type::minus_minus:
-                next();
                 break;
-            default:
-                error();
         }
-
-        if (in_set(A3_first(), cur.get_type())) A3();
-        else error();
     }
+    else if (in_set(E11_first(), cur.get_type())) E11();
+    else error();
+}
+
+void parser::E11() {
+//    if (cur.get_type() == lexeme_type::identifier){
+//        next();
+//    }
+    if (cur.get_type() == lexeme_type::left_parenthesis){
+        next();
+        if (in_set(Expr_first(), cur.get_type())) Expr();
+        if (cur.get_type() != lexeme_type::right_parenthesis) error();
+        next();
+    }
+    else if (in_set(Const_first(), cur.get_type())) Const();
+    else error();
 }

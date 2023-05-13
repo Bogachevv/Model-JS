@@ -18,12 +18,20 @@ class parser {
     void Loop();
     void Jump();
     void OpExpr();
-    void Expr();
     void Const();
-    void Arifm();
-    void A1();
-    void A2();
-    void A3();
+    void Expr();
+    void E1();
+    void E2();
+    void E3();
+    void E4();
+    void E5();
+    void E6();
+    void E7();
+    void E8();
+    void E9();
+    void E10();
+    void E11();
+
 
     bool next(bool silent = false);
 
