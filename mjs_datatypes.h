@@ -121,9 +121,14 @@ struct variable{ //fast and dirty
     mjs_data* data;
 
 public:
-    variable(std::string identifier, mjs_data *data_ptr) :
+    explicit variable(std::string identifier, mjs_data *data_ptr = nullptr) :
             identifier(std::move(identifier)), data(data_ptr)
     {}
+
+    void set_data(mjs_data* new_ptr) { data = new_ptr; }
+
+    mjs_data* get_data() const { return data; }
+
 };
 
 struct function{
@@ -140,5 +145,9 @@ struct constant{
     mjs_data* data;
 
 public:
-    explicit constant(mjs_data* data_ptr) : data(data_ptr) {}
+    explicit constant(mjs_data* data_ptr = nullptr) : data(data_ptr) {}
+
+    void set_data(mjs_data* new_ptr) { data = new_ptr; }
+
+    mjs_data* get_data() const { return data; }
 };

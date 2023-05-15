@@ -2,6 +2,7 @@
 
 #include "lexer.h"
 #include "mjs_datatypes.h"
+#include "RPN.h"
 
 #include <unordered_set>
 #include <unordered_map>
@@ -19,6 +20,8 @@ class parser {
     size_t arg_counter;
     std::stack<size_t> arg_counter_stack;
     bool function_args_processing;
+
+    RPN rpn;
 
     void S();
     void Func();

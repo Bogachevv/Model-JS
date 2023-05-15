@@ -105,31 +105,39 @@ void parser::Var() {
     next();
 
     if (cur.get_type() != lexeme_type::identifier) error();
-    if (variables.find(cur.get_body()) == variables.end()){ //create new variable
-        variables.emplace(cur.get_body(), variable(cur.get_body(), ""));
-    } else error("redefining a variable" + cur.get_body());
+    std::string name = cur.get_body();
     next();
+
+    if (variables.find(name) == variables.end()){ //create new variable
+        variables.emplace(name, variable(name));
+    } else error("redefining a variable" + name);
 
 
     if (cur.get_type() == lexeme_type::assign){ // <Name> = <Expr>
         next();
+        rpn.push_elm({RPN_types::variable_ref, &(variables.find(name)->second)});
         if (in_set(Expr_first(), cur.get_type())) Expr();
         else error();
+        rpn.push_elm({RPN_types::assign});
     }
 
     while (cur.get_type() == lexeme_type::comma){
         next();
 
         if (cur.get_type() != lexeme_type::identifier) error();
-        if (variables.find(cur.get_body()) == variables.end()){ //create new variable
-            variables.emplace(cur.get_body(), variable(cur.get_body(), ""));
-        } else error("redefining a variable" + cur.get_body());
+        name = cur.get_body();
         next();
+
+        if (variables.find(name) == variables.end()){ //create new variable
+            variables.emplace(name, variable(name));
+        } else error("redefining a variable" + name);
 
         if (cur.get_type() == lexeme_type::assign){ // <Name> = <Expr>
             next();
+            rpn.push_elm({RPN_types::variable_ref, &(variables.find(name)->second)});
             if (in_set(Expr_first(), cur.get_type())) Expr();
             else error();
+            rpn.push_elm({RPN_types::assign});
         }
     }
 
@@ -158,6 +166,7 @@ void parser::Scope() {
 }
 
 void parser::If() {
+#error NOT_IMPLEMENTED
     if (cur.get_type() != lexeme_type::mjs_if) error();
     next();
     if (cur.get_type() != lexeme_type::left_parenthesis) error();
@@ -177,6 +186,7 @@ void parser::If() {
 }
 
 void parser::Loop() {
+#error NOT_IMPLEMENTED
     if (cur.get_type() == lexeme_type::mjs_while){
         next();
         if (cur.get_type() != lexeme_type::left_parenthesis) error();
@@ -238,6 +248,7 @@ void parser::Loop() {
 }
 
 void parser::Jump() {
+#error NOT_IMPLEMENTED
     switch (cur.get_type()) {
         case lexeme_type::mjs_break:
         case lexeme_type::comma:
@@ -260,11 +271,22 @@ void parser::OpExpr() {
 }
 
 void parser::Const() {
+    constant c;
     switch (cur.get_type()) {
         case lexeme_type::string:
+            c.set_data(new mjs_string(cur.get_body()));
+            next();
+            break;
         case lexeme_type::number:
+            c.set_data(new mjs_number(cur.get_body()));
+            next();
+            break;
         case lexeme_type::mjs_false:
+            c.set_data(new mjs_bool(false));
+            next();
+            break;
         case lexeme_type::mjs_true:
+            c.set_data(new mjs_bool(true));
             next();
             break;
         default:
@@ -293,6 +315,7 @@ void parser::E1() {
         next();
         if (in_set(E2_first(), cur.get_type())) E2();
         else error();
+        rpn.push_elm({RPN_types::assign});
     }
 }
 
@@ -304,6 +327,7 @@ void parser::E2() {
         next();
         if (in_set(E3_first(), cur.get_type())) E3();
         else error();
+        rpn.push_elm({RPN_types::logical_or});
     }
 }
 
@@ -315,6 +339,7 @@ void parser::E3() {
         next();
         if (in_set(E4_first(), cur.get_type())) E4();
         else error();
+        rpn.push_elm({RPN_types::logical_and});
     }
 }
 
@@ -324,10 +349,16 @@ void parser::E4() {
 
     switch (cur.get_type()) {
         case lexeme_type::eq:
+            next();
+            if (in_set(E5_first(), cur.get_type())) E5();
+            else error();
+            rpn.push_elm({RPN_types::eq});
+            break;
         case lexeme_type::neq:
             next();
             if (in_set(E5_first(), cur.get_type())) E5();
             else error();
+            rpn.push_elm({RPN_types::neq});
             break;
 
         default:
@@ -356,6 +387,22 @@ void parser::E5() {
         default:
             break;
     }
+    switch (cur.get_type()) {
+        case lexeme_type::ls:
+            rpn.push_elm({RPN_types::ls});
+            break;
+        case lexeme_type::le:
+            rpn.push_elm({RPN_types::le});
+            break;
+        case lexeme_type::gr:
+            rpn.push_elm({RPN_types::gr});
+            break;
+        case lexeme_type::ge:
+            rpn.push_elm({RPN_types::ge});
+            break;
+        default:
+            break;
+    }
 }
 
 void parser::E6() {
@@ -368,6 +415,18 @@ void parser::E6() {
             next();
             if (in_set(E7_first(), cur.get_type())) E7();
             else error();
+            break;
+
+        default:
+            break;
+    }
+
+    switch (cur.get_type()) {
+        case lexeme_type::plus:
+            rpn.push_elm({RPN_types::bin_plus});
+            break;
+        case lexeme_type::minus:
+            rpn.push_elm({RPN_types::bin_minus});
             break;
 
         default:
@@ -391,6 +450,19 @@ void parser::E7() {
         default:
             break;
     }
+
+    switch (cur.get_type()) {
+        case lexeme_type::mul:
+            rpn.push_elm({RPN_types::mul});
+        case lexeme_type::div:
+            rpn.push_elm({RPN_types::div});
+        case lexeme_type::mod:
+            rpn.push_elm({RPN_types::mod});
+            break;
+
+        default:
+            break;
+    }
 }
 
 void parser::E8() {
@@ -398,10 +470,23 @@ void parser::E8() {
     while (loop_cond){
         switch (cur.get_type()) {
             case lexeme_type::mjs_not:
+                rpn.push_elm({RPN_types::logical_not});
+                next();
+                break;
             case lexeme_type::plus:
+                rpn.push_elm({RPN_types::un_plus});
+                next();
+                break;
             case lexeme_type::minus:
+                rpn.push_elm({RPN_types::un_minus});
+                next();
+                break;
             case lexeme_type::plus_plus:
+                rpn.push_elm({RPN_types::prefix_pp});
+                next();
+                break;
             case lexeme_type::minus_minus:
+                rpn.push_elm({RPN_types::prefix_mm});
                 next();
                 break;
             default:
@@ -420,7 +505,11 @@ void parser::E9() {
 
     switch (cur.get_type()) {
         case lexeme_type::plus_plus:
+            rpn.push_elm({RPN_types::postfix_pp});
+            next();
+            break;
         case lexeme_type::minus_minus:
+            rpn.push_elm({RPN_types::postfix_mm});
             next();
             break;
         default:
@@ -449,6 +538,7 @@ void parser::E10() {
                 next();
                 if (arg_counter == functions.find(name)->second.argc){
                     //function call
+                    rpn.push_elm({RPN_types::function_ref, nullptr, &functions.find(name)->second});
                 }
                 else error("Arguments count mismatch: expected " +
                             std::to_string(functions.find(name)->second.argc) +
@@ -459,6 +549,8 @@ void parser::E10() {
                 break;
             case lexeme_type::left_square_b:
                 next();
+                //TODO:
+                //  implement classes and objects
                 if (in_set(Expr_first(), cur.get_type())) Expr();
                 else error();
                 if (cur.get_type() != lexeme_type::right_square_b) error();
@@ -466,7 +558,7 @@ void parser::E10() {
                 break;
             default:
                 if (variables.find(name) == variables.end()) error("Using undeclared variable " + name);
-                else std::cout << "Operation with variable " << name << std::endl;
+                rpn.push_elm({RPN_types::variable_ref, &(variables.find(name)->second)});
                 break;
         }
     }
