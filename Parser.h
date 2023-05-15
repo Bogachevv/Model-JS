@@ -22,6 +22,8 @@ class parser {
     bool function_args_processing;
 
     RPN rpn;
+    std::stack<RPN::rpn_edge> continue_iterators;
+    std::stack<RPN::rpn_edge> break_iterators;
 
     void S();
     void Func();
@@ -47,6 +49,9 @@ class parser {
     void E10();
     void E11();
 
+    void process_for();
+    void process_while();
+    void process_do();
 
     bool next(bool silent = false);
 
@@ -58,4 +63,6 @@ public:
     explicit parser(const std::string& path);
 
     bool analyze();
+
+    RPN& get_rpn() { return rpn; }
 };

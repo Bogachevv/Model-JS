@@ -75,13 +75,41 @@ public:
     friend mjs_number operator/(const mjs_number&, const mjs_number&);
     friend mjs_number operator%(const mjs_number&, const mjs_number&);
 
-    mjs_number operator++();
-    mjs_number operator++(int);
-    mjs_number operator--();
-    mjs_number operator--(int);
+    mjs_number operator++() {
+        if (is_decimal) ++decimal;
+        else ++real;
+        return *this;
+    }
+    mjs_number operator++(int){
+        mjs_number tmp(*this);
+        if (is_decimal) ++tmp.decimal;
+        else ++tmp.real;
+        return tmp;
+    }
+    mjs_number operator--(){
+        if (is_decimal) --decimal;
+        else --real;
+        return *this;
+    }
+    mjs_number operator--(int){
+        mjs_number tmp(*this);
+        if (is_decimal) --tmp.decimal;
+        else --tmp.real;
+        return tmp;
+    }
 
-    bool operator==(const mjs_number&) const;
-    bool operator!=(const mjs_number&) const;
+    bool operator==(const mjs_number& rhs) const{
+        if (is_decimal == rhs.is_decimal){
+            if (is_decimal) return decimal == rhs.decimal;
+            else return real == rhs.real;
+        }
+        double l, r;
+        if (is_decimal) {l = (double)decimal; r = rhs.real;}
+        else {l = real; r = (double)rhs.decimal;}
+        return l == r;
+    }
+
+    bool operator!=(const mjs_number& rhs) const { return not (*this == rhs);}
 
     bool operator<(const mjs_number&) const;
     bool operator<=(const mjs_number&) const;

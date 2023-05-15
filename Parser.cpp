@@ -166,8 +166,47 @@ void parser::Scope() {
 }
 
 void parser::If() {
-#error NOT_IMPLEMENTED
     if (cur.get_type() != lexeme_type::mjs_if) error();
+    next();
+    if (cur.get_type() != lexeme_type::left_parenthesis) error();
+    next();
+    if (in_set(Expr_first(), cur.get_type())) Expr();
+    else error();
+    if (cur.get_type() != lexeme_type::right_parenthesis) error();
+    next();
+
+    auto jump_else = rpn.push_elm({RPN_types::jump_false}); // label added later
+
+    if (in_set(Oper_first(), cur.get_type())) Oper();
+    else error();
+
+    auto jump_end = rpn.push_elm({RPN_types::jump}); // label added later
+    jump_else->label = jump_end + 1; //add label to jump_else
+
+    if (cur.get_type() == lexeme_type::mjs_else){
+        next();
+        if (in_set(Oper_first(), cur.get_type())) Oper();
+        else error();
+    }
+
+    jump_end->label = rpn.get_last_elm() + 1; //add label to jump_end
+}
+
+void parser::Loop() {
+#warning NOT_IMPLEMENTED
+    if (cur.get_type() == lexeme_type::mjs_while){
+        process_while();
+    }
+    else if (cur.get_type() == lexeme_type::mjs_for){
+        process_for();
+    }
+    else if (cur.get_type() == lexeme_type::mjs_do){
+        process_do();
+    }
+    else error();
+}
+
+void parser::process_while() {
     next();
     if (cur.get_type() != lexeme_type::left_parenthesis) error();
     next();
@@ -177,84 +216,76 @@ void parser::If() {
     next();
     if (in_set(Oper_first(), cur.get_type())) Oper();
     else error();
-
-    if (cur.get_type() == lexeme_type::mjs_else){
-        next();
-        if (in_set(Oper_first(), cur.get_type())) Oper();
-        else error();
-    }
 }
 
-void parser::Loop() {
-#error NOT_IMPLEMENTED
-    if (cur.get_type() == lexeme_type::mjs_while){
-        next();
-        if (cur.get_type() != lexeme_type::left_parenthesis) error();
-        next();
+void parser::process_for() {
+    next();
+    if (cur.get_type() != lexeme_type::left_parenthesis) error();
+    next();
+
+    if (cur.get_type() != lexeme_type::semicolon){ //Expr1
         if (in_set(Expr_first(), cur.get_type())) Expr();
         else error();
-        if (cur.get_type() != lexeme_type::right_parenthesis) error();
-        next();
-        if (in_set(Oper_first(), cur.get_type())) Oper();
-        else error();
-    }
-    else if (cur.get_type() == lexeme_type::mjs_for){
-        next();
-        if (cur.get_type() != lexeme_type::left_parenthesis) error();
-        next();
-
-        if (cur.get_type() != lexeme_type::semicolon){ //Expr1
-            if (in_set(Expr_first(), cur.get_type())) Expr();
-            else error();
-            if (cur.get_type() != lexeme_type::semicolon) error();
-            next();
-        } else next();
-
-        if (cur.get_type() != lexeme_type::semicolon){ //Expr2
-            if (in_set(Expr_first(), cur.get_type())) Expr();
-            else error();
-            if (cur.get_type() != lexeme_type::semicolon) error();
-            next();
-        } else next();
-
-        if (cur.get_type() != lexeme_type::right_parenthesis){ //Expr3
-            if (in_set(Expr_first(), cur.get_type())) Expr();
-            else error();
-            if (cur.get_type() != lexeme_type::right_parenthesis) error();
-            next();
-        } else next();
-
-        if (in_set(Oper_first(), cur.get_type())) Oper();
-        else error();
-    }
-    else if (cur.get_type() == lexeme_type::mjs_do){
-        next();
-        if (in_set(Oper_first(), cur.get_type())) Oper();
-        else error();
-
-        if (cur.get_type() != lexeme_type::mjs_while) error();
-        next();
-        if (cur.get_type() != lexeme_type::left_parenthesis) error();
-        next();
-        if (in_set(Expr_first(), cur.get_type())) Expr();
-        else error();
-        if (cur.get_type() != lexeme_type::right_parenthesis) error();
-        next();
-
         if (cur.get_type() != lexeme_type::semicolon) error();
         next();
-    }
+    } else next();
+
+    if (cur.get_type() != lexeme_type::semicolon){ //Expr2
+        if (in_set(Expr_first(), cur.get_type())) Expr();
+        else error();
+        if (cur.get_type() != lexeme_type::semicolon) error();
+        next();
+    } else next();
+
+    if (cur.get_type() != lexeme_type::right_parenthesis){ //Expr3
+        if (in_set(Expr_first(), cur.get_type())) Expr();
+        else error();
+        if (cur.get_type() != lexeme_type::right_parenthesis) error();
+        next();
+    } else next();
+
+    if (in_set(Oper_first(), cur.get_type())) Oper();
     else error();
 }
 
+void parser::process_do() {
+    next();
+    auto loop_begin = rpn.get_last_elm() + 1;
+
+    if (in_set(Oper_first(), cur.get_type())) Oper();
+    else error();
+
+    if (cur.get_type() != lexeme_type::mjs_while) error();
+    next();
+    if (cur.get_type() != lexeme_type::left_parenthesis) error();
+    next();
+    if (in_set(Expr_first(), cur.get_type())) Expr();
+    else error();
+    auto jump_end = rpn.push_elm({RPN_types::jump_true,
+                                  nullptr, nullptr, nullptr,
+                                  loop_begin});
+    if (cur.get_type() != lexeme_type::right_parenthesis) error();
+    next();
+
+    if (cur.get_type() != lexeme_type::semicolon) error();
+    next();
+}
+
 void parser::Jump() {
-#error NOT_IMPLEMENTED
     switch (cur.get_type()) {
         case lexeme_type::mjs_break:
-        case lexeme_type::comma:
+            next();
+            if (break_iterators.empty()) error("Can't break non-existent cycle");
+            rpn.push_elm({RPN_types::jump, nullptr, nullptr, nullptr, break_iterators.top()});
+            break;
+        case lexeme_type::mjs_continue:
+            if (continue_iterators.empty()) error("Can't continue non-existent cycle");
+            rpn.push_elm({RPN_types::jump, nullptr, nullptr, nullptr, continue_iterators.top()});
             next();
             break;
         case lexeme_type::mjs_return:
+            //TODO:
+            //  implement return from function
             next();
             if (in_set(Expr_first(), cur.get_type())) Expr();
             break;
@@ -271,27 +302,28 @@ void parser::OpExpr() {
 }
 
 void parser::Const() {
-    constant c;
+    auto c = new constant;
     switch (cur.get_type()) {
         case lexeme_type::string:
-            c.set_data(new mjs_string(cur.get_body()));
+            c->set_data(new mjs_string(cur.get_body()));
             next();
             break;
         case lexeme_type::number:
-            c.set_data(new mjs_number(cur.get_body()));
+            c->set_data(new mjs_number(cur.get_body()));
             next();
             break;
         case lexeme_type::mjs_false:
-            c.set_data(new mjs_bool(false));
+            c->set_data(new mjs_bool(false));
             next();
             break;
         case lexeme_type::mjs_true:
-            c.set_data(new mjs_bool(true));
+            c->set_data(new mjs_bool(true));
             next();
             break;
         default:
             error();
     }
+    rpn.push_elm({RPN_types::constant, nullptr, nullptr, c});
 }
 
 void parser::Expr() {
@@ -374,7 +406,8 @@ void parser::E5() {
     if (in_set(E6_first(), cur.get_type())) E6();
     else error();
 
-    switch (cur.get_type()) {
+    auto lt = cur.get_type();
+    switch (lt) {
         case lexeme_type::ls:
         case lexeme_type::le:
         case lexeme_type::gr:
@@ -387,7 +420,7 @@ void parser::E5() {
         default:
             break;
     }
-    switch (cur.get_type()) {
+    switch (lt) {
         case lexeme_type::ls:
             rpn.push_elm({RPN_types::ls});
             break;
@@ -409,7 +442,8 @@ void parser::E6() {
     if (in_set(E7_first(), cur.get_type())) E7();
     else error();
 
-    switch (cur.get_type()) {
+    auto lt = cur.get_type();
+    switch (lt) {
         case lexeme_type::plus:
         case lexeme_type::minus:
             next();
@@ -421,7 +455,7 @@ void parser::E6() {
             break;
     }
 
-    switch (cur.get_type()) {
+    switch (lt) {
         case lexeme_type::plus:
             rpn.push_elm({RPN_types::bin_plus});
             break;
@@ -438,7 +472,8 @@ void parser::E7() {
     if (in_set(E8_first(), cur.get_type())) E8();
     else error();
 
-    switch (cur.get_type()) {
+    auto lt = cur.get_type();
+    switch (lt) {
         case lexeme_type::mul:
         case lexeme_type::div:
         case lexeme_type::mod:
@@ -451,7 +486,7 @@ void parser::E7() {
             break;
     }
 
-    switch (cur.get_type()) {
+    switch (lt) {
         case lexeme_type::mul:
             rpn.push_elm({RPN_types::mul});
         case lexeme_type::div:
