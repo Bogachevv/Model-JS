@@ -209,6 +209,8 @@ struct parse_error : std::runtime_error{
 
 parser::parser(const std::string& path) : lex(path), cur("") {
     cur = lex.get_lex();
+    function_args_processing = false;
+    arg_counter = 0;
 }
 
 void parser::error() {
@@ -230,7 +232,7 @@ bool parser::next(bool silent) {
 
 bool parser::analyze() {
     try{
-        S();
+        while (cur.get_type() != lexeme_type::eof) S();
     }
     catch (parse_error& err) {
         std::cout << err.what() << std::endl;
@@ -250,26 +252,22 @@ void parser::Func() {
     if (cur.get_type() != lexeme_type::function) error();
     next();
     if (cur.get_type() != lexeme_type::identifier) error();
+    function new_func(cur.get_body(), 0);
+    if (functions.find(cur.get_body()) != functions.end()) error("redefining a function");
     std::cout << "Declaring function " << cur.get_body() << " with args: ";
     next();
     if (cur.get_type() != lexeme_type::left_parenthesis) error();
     next();
 
-//    do{
-//        if (cur.get_type() != lexeme_type::identifier) error();
-//        std::cout << cur.get_body() << ", ";
-//        next();
-//    } while (cur.get_type() != lexeme_type::right_parenthesis);
-//    next();
-//    std::cout << std::endl;
-
     if (cur.get_type() == lexeme_type::identifier){
         std::cout << cur.get_body();
+        new_func.argc += 1;
         next();
 
         while (cur.get_type() == lexeme_type::comma){
             next();
             if (cur.get_type() != lexeme_type::identifier) error();
+            new_func.argc += 1;
             std::cout << ", " << cur.get_body();
             next();
         }
@@ -277,6 +275,8 @@ void parser::Func() {
 
     if (cur.get_type() != lexeme_type::right_parenthesis) error();
     next();
+
+    functions.emplace(new_func.identifier, new_func);
 
     std::cout << std::endl;
 
@@ -300,7 +300,11 @@ void parser::Var() {
     next();
 
     if (cur.get_type() != lexeme_type::identifier) error();
+    if (variables.find(cur.get_body()) == variables.end()){ //create new variable
+        variables.emplace(cur.get_body(), variable(cur.get_body(), ""));
+    } else error("redefining a variable" + cur.get_body());
     next();
+
 
     if (cur.get_type() == lexeme_type::assign){ // <Name> = <Expr>
         next();
@@ -312,6 +316,9 @@ void parser::Var() {
         next();
 
         if (cur.get_type() != lexeme_type::identifier) error();
+        if (variables.find(cur.get_body()) == variables.end()){ //create new variable
+            variables.emplace(cur.get_body(), variable(cur.get_body(), ""));
+        } else error("redefining a variable" + cur.get_body());
         next();
 
         if (cur.get_type() == lexeme_type::assign){ // <Name> = <Expr>
@@ -463,11 +470,13 @@ void parser::Const() {
 void parser::Expr() {
     if (in_set(E1_first(), cur.get_type())) E1();
     else error();
+    if (function_args_processing) ++arg_counter;
 
     while (cur.get_type() == lexeme_type::comma){
         next();
         if (in_set(E1_first(), cur.get_type())) E1();
         else error();
+        if (function_args_processing) ++arg_counter;
     }
 }
 
@@ -616,14 +625,32 @@ void parser::E9() {
 
 void parser::E10() {
     if (cur.get_type() == lexeme_type::identifier){
+        std::string name = cur.get_body();
         next();
         switch (cur.get_type()) {
             case lexeme_type::left_parenthesis:
                 next();
+                //function call
+                if (functions.find(name) == functions.end()) error("Call undeclared function " + name);
+                else std::cout << "Call function " << name << std::endl;
+                if (arg_counter != 0) {
+                    arg_counter_stack.push(arg_counter);
+                    arg_counter = 0;
+                } else arg_counter_stack.push(0);
+                function_args_processing = true;
                 if (in_set(Expr_first(), cur.get_type())) Expr();
                 else error();
                 if (cur.get_type() != lexeme_type::right_parenthesis) error();
                 next();
+                if (arg_counter == functions.find(name)->second.argc){
+                    //function call
+                }
+                else error("Arguments count mismatch: expected " +
+                            std::to_string(functions.find(name)->second.argc) +
+                            ", got " + std::to_string(arg_counter));
+                arg_counter = arg_counter_stack.top();
+                arg_counter_stack.pop();
+                if (arg_counter == 0) function_args_processing = false;
                 break;
             case lexeme_type::left_square_b:
                 next();
@@ -633,6 +660,8 @@ void parser::E10() {
                 next();
                 break;
             default:
+                if (variables.find(name) == variables.end()) error("Using undeclared variable " + name);
+                else std::cout << "Operation with variable " << name << std::endl;
                 break;
         }
     }

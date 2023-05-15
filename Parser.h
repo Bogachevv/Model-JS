@@ -3,10 +3,41 @@
 #include "lexer.h"
 
 #include <unordered_set>
+#include <unordered_map>
+#include <utility>
+#include <vector>
+#include <stack>
+
+struct variable{ //fast and dirty
+    std::string identifier;
+    std::string value;
+
+public:
+    variable(std::string identifier, std::string value) :
+        identifier(std::move(identifier)), value(std::move(value))
+    {}
+};
+
+struct function{
+    std::string identifier;
+    int argc;
+
+public:
+    function(std::string identifier, int argc) :
+        identifier(std::move(identifier)), argc(argc)
+    {}
+};
 
 class parser {
     lexer lex;
     lexeme cur;
+
+    std::unordered_map<std::string, variable> variables;
+    std::unordered_map<std::string, function> functions;
+
+    size_t arg_counter;
+    std::stack<size_t> arg_counter_stack;
+    bool function_args_processing;
 
     void S();
     void Func();

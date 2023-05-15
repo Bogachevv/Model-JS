@@ -212,7 +212,7 @@ lexeme lexer::get_lex() {
     if (is_empty()) return lexeme::eof;
 
     state st = state::start;
-    while ((not is_empty()) and ((*it == ' ') or (*it == '\n'))) ++it;
+    while ((not is_empty()) and ((*it == ' ') or (*it == '\n') or (*it == '\r'))) ++it;
     std::stringstream res;
 
     while (not is_empty()){ // lex processing loop
