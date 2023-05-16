@@ -43,7 +43,7 @@ bool parser::analyze() {
         std::cout << err.what() << std::endl;
         return false;
     }
-
+    rpn.push_elm({RPN_types::nop});
     return true;
 }
 
@@ -181,7 +181,7 @@ void parser::If() {
     else error();
 
     auto jump_end = rpn.push_elm({RPN_types::jump}); // label added later
-    jump_else->label = jump_end + 1; //add label to jump_else
+    rpn[jump_else].label = jump_end + 1; //add label to jump_else
 
     if (cur.get_type() == lexeme_type::mjs_else){
         next();
@@ -189,7 +189,7 @@ void parser::If() {
         else error();
     }
 
-    jump_end->label = rpn.get_last_elm() + 1; //add label to jump_end
+    rpn[jump_end].label = rpn.get_last_elm() + 1; //add label to jump_end
 }
 
 void parser::Loop() {
@@ -210,12 +210,16 @@ void parser::process_while() {
     next();
     if (cur.get_type() != lexeme_type::left_parenthesis) error();
     next();
+    auto loop_cond = rpn.get_last_elm();
     if (in_set(Expr_first(), cur.get_type())) Expr();
     else error();
     if (cur.get_type() != lexeme_type::right_parenthesis) error();
     next();
+    auto on_false_jump = rpn.push_elm({RPN_types::jump_false});
     if (in_set(Oper_first(), cur.get_type())) Oper();
     else error();
+    rpn.push_elm({RPN_types::jump, nullptr, nullptr, nullptr, loop_cond});
+    rpn[on_false_jump].label = rpn.get_last_elm() + 1;
 }
 
 void parser::process_for() {
@@ -230,27 +234,44 @@ void parser::process_for() {
         next();
     } else next();
 
+    size_t expr_2_pos = rpn.get_last_elm() + 1;
     if (cur.get_type() != lexeme_type::semicolon){ //Expr2
         if (in_set(Expr_first(), cur.get_type())) Expr();
         else error();
         if (cur.get_type() != lexeme_type::semicolon) error();
         next();
-    } else next();
+    } else{
+        next();
+        rpn.push_elm({RPN_types::nop});
+    }
 
+    auto jump_to_oper = rpn.push_elm({RPN_types::jump_true});
+    auto jump_to_end = rpn.push_elm({RPN_types::jump});
+
+    size_t expr_3_pos = rpn.get_last_elm() + 1;
     if (cur.get_type() != lexeme_type::right_parenthesis){ //Expr3
         if (in_set(Expr_first(), cur.get_type())) Expr();
         else error();
         if (cur.get_type() != lexeme_type::right_parenthesis) error();
         next();
-    } else next();
+    } else{
+        next();
+        rpn.push_elm({RPN_types::nop});
+    }
 
+    rpn.push_elm({RPN_types::jump, nullptr, nullptr, nullptr, expr_2_pos});
+
+    rpn[jump_to_oper].label = rpn.get_last_elm()+1;
     if (in_set(Oper_first(), cur.get_type())) Oper();
     else error();
+
+    rpn.push_elm({RPN_types::jump, nullptr, nullptr, nullptr, expr_3_pos});
+    rpn[jump_to_end].label = rpn.get_last_elm()+1;
 }
 
 void parser::process_do() {
     next();
-    auto loop_begin = rpn.get_last_elm() + 1;
+    size_t loop_begin = rpn.get_last_elm();
 
     if (in_set(Oper_first(), cur.get_type())) Oper();
     else error();

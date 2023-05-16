@@ -23,14 +23,15 @@ int main() {
 
     RPN rpn = p.get_rpn();
     auto elms = rpn.get_elements();
+    size_t counter = 0;
     for (auto & elm : elms){
         if ((elm.type == RPN_types::jump) or (elm.type == RPN_types::jump_true) or (elm.type == RPN_types::jump_false)){
-            cout << (int)(elm.type) << ": " << elm.label - elms.begin() << endl;
-//            cout << (int)(elm.type) << ": " << elm.label - elms.begin() << endl;
+            cout << counter << ": " << (int)(elm.type) << " jump to " << elm.label << endl;
         }
         else{
-            cout << (int)(elm.type) << endl;
+            cout << counter << ": " << (int)(elm.type) << endl;
         }
+        ++counter;
     }
 
     cout << endl << "Success" << endl;

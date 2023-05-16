@@ -22,8 +22,8 @@ class parser {
     bool function_args_processing;
 
     RPN rpn;
-    std::stack<RPN::rpn_edge> continue_iterators;
-    std::stack<RPN::rpn_edge> break_iterators;
+    std::stack<size_t> continue_iterators;
+    std::stack<size_t> break_iterators;
 
     void S();
     void Func();

@@ -24,26 +24,28 @@ struct RPN_element{
     variable* var_ref;
     function* func_ref;
     constant* const_ref;
-    std::vector<RPN_element>::iterator label;
+    size_t label;
 };
 
 class RPN { //reverse polish notation
     std::vector<RPN_element> elements;
 
 public:
-    using rpn_edge = typename decltype(elements)::iterator;
+//    using rpn_edge = typename decltype(elements)::iterator;
 
     RPN(){
         RPN_element elm = {RPN_types::nop};
         elements.emplace_back(elm);
     }
 
-    rpn_edge push_elm(RPN_element elm) {
+    size_t push_elm(RPN_element elm) {
         elements.emplace_back(elm);
-        return elements.end() - 1;
+        return elements.size() - 1;
     }
 
-    rpn_edge get_last_elm() { return elements.end() - 1; }
+    size_t get_last_elm() { return elements.size() ? (elements.size() - 1) : 0; }
+
+    RPN_element& operator[](size_t pos) { return elements[pos]; }
 
     bool evaluate();
 
