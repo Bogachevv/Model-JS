@@ -6,16 +6,16 @@
 #include <vector>
 
 enum class RPN_types : int{
-    jump_false, jump_true, jump, label,
-    variable_ref, function_ref, constant,
+    jump_false, jump_true, jump,
+    variable_ref, function_ref, constant, //TODO: NI function_ref
     assign, logical_or, logical_and,
     eq, neq, identity, not_identity,
     ls, le, gr, ge,
-    bin_plus, bin_minus,
+    bin_plus, bin_minus, //TODO: NI
     mul, div, mod,
-    logical_not, un_plus, un_minus, prefix_pp, prefix_mm, rpn_typeof,
+    logical_not, un_plus, un_minus, prefix_pp, prefix_mm, rpn_typeof, //TODO: rpn_typeof
     postfix_pp, postfix_mm,
-    field_access, field_expr_access,
+    field_access, field_expr_access, //TODO: NI
     nop,
 };
 
@@ -47,7 +47,7 @@ public:
 
     RPN_element& operator[](size_t pos) { return elements[pos]; }
 
-    bool evaluate();
+    void evaluate();
 
     std::vector<RPN_element>& get_elements() { return elements; }
 };

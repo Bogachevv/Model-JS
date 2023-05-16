@@ -65,4 +65,6 @@ public:
     bool analyze();
 
     RPN& get_rpn() { return rpn; }
+
+    const std::unordered_map<std::string, variable>& get_variables() const { return variables; }
 };

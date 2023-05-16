@@ -3,6 +3,43 @@
 #include <stdexcept>
 #include <algorithm>
 
+mjs_data* operator+(const mjs_data& lhs, const mjs_data& rhs){
+    if (lhs.get_type() == mjs_data_types::mjs_bool)
+        return operator+(mjs_number(dynamic_cast<const mjs_bool&>(lhs)), rhs);
+    if (rhs.get_type() == mjs_data_types::mjs_bool)
+        return operator+(lhs, mjs_number(dynamic_cast<const mjs_bool&>(rhs)));
+
+    // number + number
+    if ((lhs.get_type() == mjs_data_types::mjs_number) and (rhs.get_type() == mjs_data_types::mjs_number)){
+        return new mjs_number(dynamic_cast<const mjs_number&>(lhs) + dynamic_cast<const mjs_number&>(rhs));
+    }
+
+    // string + string
+    if (lhs.get_type() == mjs_data_types::mjs_number){
+        return new mjs_string(
+                dynamic_cast<const mjs_number &>(lhs).to_mjs_string() + dynamic_cast<const mjs_string&>(rhs));
+    }
+    if (rhs.get_type() == mjs_data_types::mjs_number){
+        return new mjs_string(dynamic_cast<const mjs_string&>(lhs) +
+                                      dynamic_cast<const mjs_number &>(rhs).to_mjs_string());
+    }
+
+    throw std::logic_error("Unreachable fragment reached");
+}
+
+mjs_data* operator-(const mjs_data& lhs, const mjs_data& rhs){
+    if (lhs.get_type() == mjs_data_types::mjs_bool)
+        return operator-(mjs_number(dynamic_cast<const mjs_bool&>(lhs)), rhs);
+    if (rhs.get_type() == mjs_data_types::mjs_bool)
+        return operator-(lhs, mjs_number(dynamic_cast<const mjs_bool&>(rhs)));
+
+    if ((lhs.get_type() == mjs_data_types::mjs_number) and (rhs.get_type() == mjs_data_types::mjs_number)){
+        return new mjs_number(dynamic_cast<const mjs_number&>(lhs) - dynamic_cast<const mjs_number&>(rhs));
+    }
+
+    throw type_error("Unable to apply subtraction to a string");
+}
+
 bool operator==(const mjs_data& lhs, const mjs_data& rhs){
     if (lhs.type == rhs.type){
         switch (lhs.type) {
@@ -91,6 +128,7 @@ bool mjs_data::is_ident(const mjs_data &other) const {
 }
 
 mjs_number::mjs_number(const std::string &str) {
+    type = mjs_data_types::mjs_number;
     if (str.empty()) return;
     if ((str[0] == '+') or (str[0] == '-')){
         is_decimal = std::all_of(str.begin()+1, str.end(), ::isdigit);

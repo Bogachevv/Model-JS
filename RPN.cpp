@@ -8,7 +8,7 @@ struct stack_elm{
     variable* variable_ptr;
 };
 
-bool RPN::evaluate() {
+void RPN::evaluate() {
     std::stack<stack_elm> exec_stack;
     stack_elm left_ptr, right_ptr;
 
@@ -118,10 +118,18 @@ bool RPN::evaluate() {
                 exec_stack.push({new mjs_bool(*left_ptr.data_ptr >= *right_ptr.data_ptr)});
                 break;
             case RPN_types::bin_plus:
-                throw std::logic_error("Not implemented");
+                right_ptr = exec_stack.top();
+                exec_stack.pop();
+                left_ptr = exec_stack.top();
+                exec_stack.pop();
+                exec_stack.push({*left_ptr.data_ptr + *right_ptr.data_ptr});
                 break;
             case RPN_types::bin_minus:
-                throw std::logic_error("Not implemented");
+                right_ptr = exec_stack.top();
+                exec_stack.pop();
+                left_ptr = exec_stack.top();
+                exec_stack.pop();
+                exec_stack.push({*left_ptr.data_ptr - *right_ptr.data_ptr});
                 break;
             case RPN_types::mul:
                 right_ptr = exec_stack.top();
@@ -161,6 +169,63 @@ bool RPN::evaluate() {
                 exec_stack.push({new mjs_number(
                         (*dynamic_cast<mjs_number*>(left_ptr.data_ptr)) % (*dynamic_cast<mjs_number*>(right_ptr.data_ptr))
                 )});
+                break;
+            case RPN_types::logical_not:
+                left_ptr = exec_stack.top();
+                exec_stack.pop();
+                exec_stack.push({new mjs_bool(not (*left_ptr.data_ptr))});
+                break;
+            case RPN_types::un_plus:
+                left_ptr = exec_stack.top();
+                exec_stack.pop();
+                if (left_ptr.data_ptr->get_type() != mjs_data_types::mjs_number)
+                    throw type_error("Can't apply + to non-number object");
+                exec_stack.push({
+                                        new mjs_number((*dynamic_cast<mjs_number*>(left_ptr.data_ptr)))
+                                });
+                break;
+            case RPN_types::un_minus:
+                left_ptr = exec_stack.top();
+                exec_stack.pop();
+                if (left_ptr.data_ptr->get_type() != mjs_data_types::mjs_number)
+                    throw type_error("Can't apply - to non-number object");
+                exec_stack.push({
+                                        new mjs_number(-(*dynamic_cast<mjs_number*>(left_ptr.data_ptr)))
+                                });
+                break;
+            case RPN_types::prefix_pp:
+                left_ptr = exec_stack.top();
+                exec_stack.pop();
+                if (left_ptr.data_ptr->get_type() != mjs_data_types::mjs_number)
+                    throw type_error("Can't apply + to non-number object");
+                ++(*dynamic_cast<mjs_number*>(left_ptr.data_ptr));
+                exec_stack.push({left_ptr.data_ptr});
+                break;
+            case RPN_types::prefix_mm:
+                left_ptr = exec_stack.top();
+                exec_stack.pop();
+                if (left_ptr.data_ptr->get_type() != mjs_data_types::mjs_number)
+                    throw type_error("Can't apply + to non-number object");
+                --(*dynamic_cast<mjs_number*>(left_ptr.data_ptr));
+                exec_stack.push({left_ptr.data_ptr});
+                break;
+            case RPN_types::postfix_pp:
+                left_ptr = exec_stack.top();
+                exec_stack.pop();
+                if (left_ptr.data_ptr->get_type() != mjs_data_types::mjs_number)
+                    throw type_error("Can't apply + to non-number object");
+                exec_stack.push({
+                                        new mjs_number((*dynamic_cast<mjs_number*>(left_ptr.data_ptr))++)
+                                });
+                break;
+            case RPN_types::postfix_mm:
+                left_ptr = exec_stack.top();
+                exec_stack.pop();
+                if (left_ptr.data_ptr->get_type() != mjs_data_types::mjs_number)
+                    throw type_error("Can't apply + to non-number object");
+                exec_stack.push({
+                                        new mjs_number((*dynamic_cast<mjs_number*>(left_ptr.data_ptr))--)
+                                });
                 break;
         }
     }

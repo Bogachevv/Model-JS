@@ -19,7 +19,7 @@ int main() {
     std::cout << "Start parsing..." << std::endl;
 
     parser p(path);
-    p.analyze();
+    if (not p.analyze()) exit(1);
 
     RPN rpn = p.get_rpn();
     auto elms = rpn.get_elements();
@@ -32,6 +32,13 @@ int main() {
             cout << counter << ": " << (int)(elm.type) << endl;
         }
         ++counter;
+    }
+
+    rpn.evaluate();
+
+    cout << endl << "Variables: " << endl;
+    for (const auto & it : p.get_variables()){
+        cout << it.first << ": " << it.second.data->convert_to_string() << endl;
     }
 
     cout << endl << "Success" << endl;

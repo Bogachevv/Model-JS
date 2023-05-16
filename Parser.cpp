@@ -325,7 +325,7 @@ void parser::Const() {
     auto c = new constant;
     switch (cur.get_type()) {
         case lexeme_type::string:
-            c->set_data(new mjs_string(cur.get_body()));
+            c->set_data(new mjs_string({cur.get_body().begin() + 1, cur.get_body().end() - 1}));
             next();
             break;
         case lexeme_type::number:
@@ -509,8 +509,10 @@ void parser::E7() {
     switch (lt) {
         case lexeme_type::mul:
             rpn.push_elm({RPN_types::mul});
+            break;
         case lexeme_type::div:
             rpn.push_elm({RPN_types::div});
+            break;
         case lexeme_type::mod:
             rpn.push_elm({RPN_types::mod});
             break;
