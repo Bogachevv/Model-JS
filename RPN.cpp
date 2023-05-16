@@ -30,6 +30,9 @@ void RPN::evaluate() {
         switch (elements[i].type) {
             case RPN_types::nop:
                 continue;
+            case RPN_types::pop:
+                if (not exec_stack.empty()) exec_stack.pop();
+                break;
             case RPN_types::jump_false:
                 left_ptr = exec_stack.top();
                 exec_stack.pop();

@@ -329,6 +329,7 @@ void parser::Jump() {
 void parser::OpExpr() {
     if (in_set(Expr_first(), cur.get_type())) Expr();
     else error();
+    rpn.push_elm({RPN_types::pop});
 }
 
 void parser::Const() {

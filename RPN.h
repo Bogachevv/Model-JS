@@ -16,7 +16,7 @@ enum class RPN_types : int{
     logical_not, un_plus, un_minus, prefix_pp, prefix_mm, rpn_typeof, //TODO: rpn_typeof
     postfix_pp, postfix_mm,
     field_access, field_expr_access, //TODO: NI
-    nop,
+    nop, pop
 };
 
 struct RPN_element{
@@ -43,7 +43,7 @@ public:
         return elements.size() - 1;
     }
 
-    size_t get_last_elm() { return elements.size() ? (elements.size() - 1) : 0; }
+    size_t get_last_elm() { return !elements.empty() ? (elements.size() - 1) : 0; }
 
     RPN_element& operator[](size_t pos) { return elements[pos]; }
 
