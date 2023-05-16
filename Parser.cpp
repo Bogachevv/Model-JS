@@ -193,7 +193,6 @@ void parser::If() {
 }
 
 void parser::Loop() {
-#warning NOT_IMPLEMENTED
     if (cur.get_type() == lexeme_type::mjs_while){
         process_while();
     }
@@ -271,7 +270,7 @@ void parser::process_for() {
 
 void parser::process_do() {
     next();
-    size_t loop_begin = rpn.get_last_elm();
+    size_t loop_begin = rpn.get_last_elm()+1;
 
     if (in_set(Oper_first(), cur.get_type())) Oper();
     else error();

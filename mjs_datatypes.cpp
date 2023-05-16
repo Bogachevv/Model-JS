@@ -1,6 +1,7 @@
 #include "mjs_datatypes.h"
 
 #include <stdexcept>
+#include <algorithm>
 
 bool operator==(const mjs_data& lhs, const mjs_data& rhs){
     if (lhs.type == rhs.type){
@@ -90,38 +91,102 @@ bool mjs_data::is_ident(const mjs_data &other) const {
 }
 
 mjs_number::mjs_number(const std::string &str) {
-    throw std::logic_error("Not implemented");
+    if (str.empty()) return;
+    if ((str[0] == '+') or (str[0] == '-')){
+        is_decimal = std::all_of(str.begin()+1, str.end(), ::isdigit);
+    }
+    else{
+        is_decimal = std::all_of(str.begin(), str.end(), ::isdigit);
+    }
+
+    if (is_decimal){
+        decimal = std::stoi(str);
+        real = 0.0;
+    }else{
+        decimal = 0;
+        real = std::stod(str);
+    }
 }
 
-mjs_number operator+(const mjs_number&, const mjs_number&){
-    throw std::logic_error("Not implemented");
-}
-mjs_number operator-(const mjs_number&, const mjs_number&){
-    throw std::logic_error("Not implemented");
-}
-
-mjs_number operator*(const mjs_number&, const mjs_number&){
-    throw std::logic_error("Not implemented");
-}
-mjs_number operator/(const mjs_number&, const mjs_number&){
-    throw std::logic_error("Not implemented");
-}
-mjs_number operator%(const mjs_number&, const mjs_number&){
-    throw std::logic_error("Not implemented");
+mjs_number operator+(const mjs_number& lhs, const mjs_number& rhs){
+    if (lhs.is_decimal and rhs.is_decimal){
+        return mjs_number(lhs.decimal + rhs.decimal);
+    }
+    else{
+        return mjs_number((lhs.is_decimal ? (double)lhs.decimal : lhs.real) +
+        (rhs.is_decimal ? (double)rhs.decimal : rhs.real));
+    }
 }
 
-bool mjs_number::operator<(const mjs_number &) const {
-    throw std::logic_error("Not implemented");
+mjs_number operator-(const mjs_number& lhs, const mjs_number& rhs){
+    if (lhs.is_decimal and rhs.is_decimal){
+        return mjs_number(lhs.decimal - rhs.decimal);
+    }
+    else{
+        return mjs_number((lhs.is_decimal ? (double)lhs.decimal : lhs.real) -
+                          (rhs.is_decimal ? (double)rhs.decimal : rhs.real));
+    }
 }
 
-bool mjs_number::operator<=(const mjs_number &) const {
-    throw std::logic_error("Not implemented");
+mjs_number operator*(const mjs_number& lhs, const mjs_number& rhs){
+    if (lhs.is_decimal and rhs.is_decimal){
+        return mjs_number(lhs.decimal * rhs.decimal);
+    }
+    else{
+        return mjs_number((lhs.is_decimal ? (double)lhs.decimal : lhs.real) *
+                          (rhs.is_decimal ? (double)rhs.decimal : rhs.real));
+    }
 }
 
-bool mjs_number::operator>(const mjs_number &) const {
-    throw std::logic_error("Not implemented");
+mjs_number operator/(const mjs_number& lhs, const mjs_number& rhs){
+    if (lhs.is_decimal and rhs.is_decimal){
+        return mjs_number(lhs.decimal / rhs.decimal);
+    }
+    else{
+        return mjs_number((lhs.is_decimal ? (double)lhs.decimal : lhs.real) /
+                          (rhs.is_decimal ? (double)rhs.decimal : rhs.real));
+    }
 }
 
-bool mjs_number::operator>=(const mjs_number &) const {
-    throw std::logic_error("Not implemented");
+mjs_number operator%(const mjs_number& lhs, const mjs_number& rhs){
+    if (lhs.is_decimal and rhs.is_decimal){
+        return mjs_number(lhs.decimal % rhs.decimal);
+    }
+    else throw type_error("Can't execute % operation for non-decimal numbers");
+}
+
+bool mjs_number::operator<(const mjs_number &rhs) const {
+    if (is_decimal and rhs.is_decimal){
+        return decimal < rhs.decimal;
+    }
+    else{
+        return ((is_decimal ? (double)decimal : real) < (rhs.is_decimal ? (double)rhs.decimal : rhs.real));
+    }
+}
+
+bool mjs_number::operator<=(const mjs_number &rhs) const {
+    if (is_decimal and rhs.is_decimal){
+        return decimal <= rhs.decimal;
+    }
+    else{
+        return ((is_decimal ? (double)decimal : real) <= (rhs.is_decimal ? (double)rhs.decimal : rhs.real));
+    }
+}
+
+bool mjs_number::operator>(const mjs_number &rhs) const {
+    if (is_decimal and rhs.is_decimal){
+        return decimal > rhs.decimal;
+    }
+    else{
+        return ((is_decimal ? (double)decimal : real) > (rhs.is_decimal ? (double)rhs.decimal : rhs.real));
+    }
+}
+
+bool mjs_number::operator>=(const mjs_number &rhs) const {
+    if (is_decimal and rhs.is_decimal){
+        return decimal >= rhs.decimal;
+    }
+    else{
+        return ((is_decimal ? (double)decimal : real) >= (rhs.is_decimal ? (double)rhs.decimal : rhs.real));
+    }
 }

@@ -3,15 +3,22 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <stdexcept>
 
 enum class mjs_data_types{
     mjs_string, mjs_number, mjs_bool
+};
+
+struct type_error : std::runtime_error{
+    explicit type_error(const std::string& msg) : std::runtime_error(msg) {}
 };
 
 class mjs_data{
 protected:
     mjs_data_types type;
 public:
+    mjs_data_types get_type() const { return type; }
+
     virtual explicit operator bool() = 0;
 
     friend bool operator==(const mjs_data&, const mjs_data&);
@@ -55,7 +62,7 @@ public:
 class mjs_number : public mjs_data{
     bool is_decimal;
     double real;
-    long long decimal;
+    int decimal;
 
 public:
     mjs_number(){type = mjs_data_types::mjs_number; is_decimal = true; decimal = 0; real = 0;}
