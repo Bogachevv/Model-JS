@@ -1,6 +1,7 @@
 #include "Parser.h"
 #include "Parser_utils.h"
 #include "Parser_first_functions.h"
+#include "proprietary_functions.h"
 
 #include <stdexcept>
 #include <iostream>
@@ -16,6 +17,15 @@ parser::parser(const std::string& path) : lex(path), cur("") {
     cur = lex.get_lex();
     function_args_processing = false;
     arg_counter = 0;
+    functions.emplace("write", new proprietary_function("write",
+                                                        proprietary_functions::argc_map.find("write")->second,
+                                                        proprietary_functions::write
+                                                        ));
+    functions.emplace("get_env", new proprietary_function("get_env",
+                                                        proprietary_functions::argc_map.find("get_env")->second,
+                                                        proprietary_functions::get_env
+    ));
+
 }
 
 void parser::error() {
@@ -57,7 +67,7 @@ void parser::Func() {
     if (cur.get_type() != lexeme_type::function) error();
     next();
     if (cur.get_type() != lexeme_type::identifier) error();
-    function new_func(cur.get_body(), 0);
+    auto new_func = new custom_function(cur.get_body(), 0);
     if (functions.find(cur.get_body()) != functions.end()) error("redefining a function");
     std::cout << "Declaring function " << cur.get_body() << " with args: ";
     next();
@@ -66,13 +76,13 @@ void parser::Func() {
 
     if (cur.get_type() == lexeme_type::identifier){
         std::cout << cur.get_body();
-        new_func.argc += 1;
+        new_func->set_argc(new_func->get_argc() + 1);
         next();
 
         while (cur.get_type() == lexeme_type::comma){
             next();
             if (cur.get_type() != lexeme_type::identifier) error();
-            new_func.argc += 1;
+            new_func->set_argc(new_func->get_argc() + 1);
             std::cout << ", " << cur.get_body();
             next();
         }
@@ -81,7 +91,7 @@ void parser::Func() {
     if (cur.get_type() != lexeme_type::right_parenthesis) error();
     next();
 
-    functions.emplace(new_func.identifier, new_func);
+    functions.emplace(new_func->get_identifier(), new_func);
 
     std::cout << std::endl;
 
@@ -593,12 +603,12 @@ void parser::E10() {
                 else error();
                 if (cur.get_type() != lexeme_type::right_parenthesis) error();
                 next();
-                if (arg_counter == functions.find(name)->second.argc){
+                if (arg_counter == functions.find(name)->second->get_argc()){
                     //function call
-                    rpn.push_elm({RPN_types::function_ref, nullptr, &functions.find(name)->second});
+                    rpn.push_elm({RPN_types::function_ref, nullptr, functions.find(name)->second});
                 }
                 else error("Arguments count mismatch: expected " +
-                            std::to_string(functions.find(name)->second.argc) +
+                            std::to_string(functions.find(name)->second->get_argc()) +
                             ", got " + std::to_string(arg_counter));
                 arg_counter = arg_counter_stack.top();
                 arg_counter_stack.pop();

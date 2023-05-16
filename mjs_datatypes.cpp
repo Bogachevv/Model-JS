@@ -127,7 +127,7 @@ bool mjs_data::is_ident(const mjs_data &other) const {
     return *this == other;
 }
 
-mjs_number::mjs_number(const std::string &str) {
+mjs_number::mjs_number(const std::string &str) : mjs_data(mjs_data_types::mjs_number) {
     type = mjs_data_types::mjs_number;
     if (str.empty()) return;
     if ((str[0] == '+') or (str[0] == '-')){

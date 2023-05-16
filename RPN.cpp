@@ -8,6 +8,19 @@ struct stack_elm{
     variable* variable_ptr;
 };
 
+void process_function_call(RPN_element cmd, std::stack<stack_elm>& exec_stack){
+    int argc = cmd.func_ref->get_argc();
+    std::vector<mjs_data*> args(argc);
+
+    for (auto it = args.rbegin(); it != args.rend(); ++it){
+        *it = exec_stack.top().data_ptr;
+        exec_stack.pop();
+    }
+
+    auto result = (*cmd.func_ref)(args);
+    exec_stack.push({result});
+}
+
 void RPN::evaluate() {
     std::stack<stack_elm> exec_stack;
     stack_elm left_ptr, right_ptr;
@@ -34,7 +47,8 @@ void RPN::evaluate() {
                 exec_stack.push({elements[i].var_ref->data, elements[i].var_ref});
                 break;
             case RPN_types::function_ref:
-                throw std::logic_error("Not implemented");
+//                throw std::logic_error("Not implemented");
+                process_function_call(elements[i], exec_stack);
                 break;
             case RPN_types::constant:
                 exec_stack.push({elements[i].const_ref->data});
@@ -229,4 +243,6 @@ void RPN::evaluate() {
                 break;
         }
     }
+
+    int prt = 12;
 }

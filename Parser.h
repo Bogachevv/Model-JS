@@ -1,7 +1,8 @@
 #pragma once
 
 #include "lexer.h"
-#include "mjs_datatypes.h"
+#include "mjs_data_containers.h"
+#include "proprietary_functions.h"
 #include "RPN.h"
 
 #include <unordered_set>
@@ -15,7 +16,7 @@ class parser {
     lexeme cur;
 
     std::unordered_map<std::string, variable> variables;
-    std::unordered_map<std::string, function> functions;
+    std::unordered_map<std::string, function*> functions;
 
     size_t arg_counter;
     std::stack<size_t> arg_counter_stack;

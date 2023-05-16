@@ -1,17 +1,17 @@
 #pragma once
 
 //#include "Parser.h"
-#include "mjs_datatypes.h"
+#include "mjs_data_containers.h"
 
 #include <vector>
 
 enum class RPN_types : int{
-    jump_false, jump_true, jump,
+    jump_false, jump_true, jump, label,
     variable_ref, function_ref, constant, //TODO: NI function_ref
     assign, logical_or, logical_and,
     eq, neq, identity, not_identity,
     ls, le, gr, ge,
-    bin_plus, bin_minus, //TODO: NI
+    bin_plus, bin_minus,
     mul, div, mod,
     logical_not, un_plus, un_minus, prefix_pp, prefix_mm, rpn_typeof, //TODO: rpn_typeof
     postfix_pp, postfix_mm,
