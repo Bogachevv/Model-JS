@@ -49,6 +49,14 @@ public:
     const std::string& get_identifier() const { return identifier; }
 
     int get_argc() const { return argc; }
+
+    const std::vector<std::string> &get_formal_args() const {
+        return formal_args;
+    }
+
+    void set_formal_args(const std::vector<std::string> &formalArgs) {
+        formal_args = formalArgs;
+    }
 };
 
 class RPN; //extern declaration
@@ -65,9 +73,7 @@ public:
 
     void set_rpn(const std::shared_ptr<RPN>& new_rpn) { body = new_rpn; }
 
-    mjs_data* operator()(std::vector<mjs_data*> actual_params) override{
-#warning Not implemented;
-    }
+    mjs_data* operator()(std::vector<mjs_data*> actual_params) override;
 
 };
 

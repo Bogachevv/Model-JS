@@ -21,6 +21,10 @@ parser::parser(const std::string& path) : lex(path), cur(""), rpn(std::make_shar
                                                         proprietary_functions::argc_map.find("write")->second,
                                                         proprietary_functions::write
                                                         ));
+    functions.emplace("writeln", new proprietary_function("writeln",
+                                                        proprietary_functions::argc_map.find("writeln")->second,
+                                                        proprietary_functions::writeln
+    ));
     functions.emplace("get_env", new proprietary_function("get_env",
                                                         proprietary_functions::argc_map.find("get_env")->second,
                                                         proprietary_functions::get_env
@@ -68,6 +72,7 @@ void parser::Func() {
     next();
     if (cur.get_type() != lexeme_type::identifier) error();
     auto new_func = new custom_function(cur.get_body(), 0);
+    std::vector<std::string> formal_args;
     if (functions.find(cur.get_body()) != functions.end()) error("redefining a function");
     std::cout << "Declaring function " << cur.get_body() << " with args: ";
     next();
@@ -76,6 +81,7 @@ void parser::Func() {
 
     if (cur.get_type() == lexeme_type::identifier){
         std::cout << cur.get_body();
+        formal_args.push_back(cur.get_body());
         new_func->set_argc(new_func->get_argc() + 1);
         next();
 
@@ -83,9 +89,12 @@ void parser::Func() {
             next();
             if (cur.get_type() != lexeme_type::identifier) error();
             new_func->set_argc(new_func->get_argc() + 1);
+            formal_args.push_back(cur.get_body());
             std::cout << ", " << cur.get_body();
             next();
         }
+
+        new_func->set_formal_args(formal_args);
     }
 
     if (cur.get_type() != lexeme_type::right_parenthesis) error();
@@ -94,17 +103,23 @@ void parser::Func() {
     std::cout << std::endl;
 
     functions_rpn_stack.push(rpn); // hide main rpn to stack
+    functions_variables_stack.push(variables); //hide(copy) global variables to stack
+    // variable contains only identifier and pointer to mjs_data, so copying is not overhead
 
     rpn = std::make_shared<RPN>(); // create rpn for the new_func
+    for (const auto &arg: formal_args){
+        variables.emplace(arg, variable(arg));
+    }
     if (in_set(Scope_first(), cur.get_type())) Scope(); // fill rpn for the new_func
     else error();
+    rpn->push_elm({RPN_types::nop});
     new_func->set_rpn(rpn);
 
     rpn = functions_rpn_stack.top(); // get main rpn from stack
     functions_rpn_stack.pop();
+    std::swap(variables, functions_variables_stack.top());
+    functions_variables_stack.pop();
 
-#error 
-    //TODO: Change variables to function locals
     functions.emplace(new_func->get_identifier(), new_func);
 }
 
@@ -609,8 +624,10 @@ void parser::E10() {
                     arg_counter = 0;
                 } else arg_counter_stack.push(0);
                 function_args_processing = true;
-                if (in_set(Expr_first(), cur.get_type())) Expr();
-                else error();
+                if (cur.get_type() != lexeme_type::right_parenthesis){
+                    if (in_set(Expr_first(), cur.get_type())) Expr();
+                    else error();
+                }
                 if (cur.get_type() != lexeme_type::right_parenthesis) error();
                 next();
                 if (arg_counter == functions.find(name)->second->get_argc()){

@@ -34,12 +34,13 @@ int main() {
         ++counter;
     }
 
+    cout << endl << "Running program..." << endl;
     rpn->evaluate();
 
-//    cout << endl << "Variables: " << endl;
-//    for (const auto & it : p.get_variables()){
-//        cout << it.first << ": " << it.second.data->convert_to_string() << endl;
-//    }
+    cout << endl << "Variables: " << endl;
+    for (const auto & it : p.get_variables()){
+        cout << it.first << ": " << it.second.data->convert_to_string() << endl;
+    }
 
     cout << endl << "Success" << endl;
 

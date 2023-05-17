@@ -25,6 +25,7 @@ class parser {
 
     std::shared_ptr<RPN> rpn;
     std::stack<std::shared_ptr<RPN>> functions_rpn_stack;
+    std::stack<std::unordered_map<std::string, variable>> functions_variables_stack;
 
     std::stack<size_t> continue_iterators;
     std::stack<size_t> break_iterators;
