@@ -21,9 +21,9 @@ void process_function_call(RPN_element cmd, std::stack<stack_elm>& exec_stack){
     exec_stack.push({result});
 }
 
-void RPN::evaluate() {
+mjs_data* RPN::evaluate() {
     std::stack<stack_elm> exec_stack;
-    stack_elm left_ptr, right_ptr;
+    stack_elm left_ptr({}), right_ptr({});
 
 
     for (size_t i = 0; i < elements.size(); ++i){
@@ -247,5 +247,10 @@ void RPN::evaluate() {
         }
     }
 
-    int prt = 12;
+    if (exec_stack.empty()){
+        return new mjs_undefined;
+    }
+    else{
+        return exec_stack.top().data_ptr;
+    }
 }

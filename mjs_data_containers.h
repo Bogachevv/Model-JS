@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <functional>
+#include <memory>
 
 #include "mjs_datatypes.h"
 
@@ -53,16 +54,16 @@ public:
 class RPN; //extern declaration
 
 class custom_function : public function{
-    RPN* body;
+    std::shared_ptr<RPN> body;
 
 public:
-    custom_function(std::string identifier, int argc) : function(std::move(identifier), argc), body(nullptr) {}
+    custom_function(std::string identifier, int argc) : function(std::move(identifier), argc) {}
 
     void set_argc(int new_argc) { argc = new_argc; }
 
-    RPN* get_rpn() { return body; }
+    std::shared_ptr<RPN> get_rpn() { return body; }
 
-    void set_rpn(RPN *new_rpn) { body = new_rpn; }
+    void set_rpn(const std::shared_ptr<RPN>& new_rpn) { body = new_rpn; }
 
     mjs_data* operator()(std::vector<mjs_data*> actual_params) override{
 #warning Not implemented;

@@ -21,8 +21,8 @@ int main() {
     parser p(path);
     if (not p.analyze()) exit(1);
 
-    RPN rpn = p.get_rpn();
-    auto elms = rpn.get_elements();
+    auto rpn = p.get_rpn();
+    auto elms = rpn->get_elements();
     size_t counter = 0;
     for (auto & elm : elms){
         if ((elm.type == RPN_types::jump) or (elm.type == RPN_types::jump_true) or (elm.type == RPN_types::jump_false)){
@@ -34,12 +34,12 @@ int main() {
         ++counter;
     }
 
-    rpn.evaluate();
+    rpn->evaluate();
 
-    cout << endl << "Variables: " << endl;
-    for (const auto & it : p.get_variables()){
-        cout << it.first << ": " << it.second.data->convert_to_string() << endl;
-    }
+//    cout << endl << "Variables: " << endl;
+//    for (const auto & it : p.get_variables()){
+//        cout << it.first << ": " << it.second.data->convert_to_string() << endl;
+//    }
 
     cout << endl << "Success" << endl;
 

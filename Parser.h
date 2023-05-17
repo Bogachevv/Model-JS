@@ -10,6 +10,7 @@
 #include <utility>
 #include <vector>
 #include <stack>
+#include <memory>
 
 class parser {
     lexer lex;
@@ -22,7 +23,9 @@ class parser {
     std::stack<size_t> arg_counter_stack;
     bool function_args_processing;
 
-    RPN rpn;
+    std::shared_ptr<RPN> rpn;
+    std::stack<std::shared_ptr<RPN>> functions_rpn_stack;
+
     std::stack<size_t> continue_iterators;
     std::stack<size_t> break_iterators;
 
@@ -65,7 +68,7 @@ public:
 
     bool analyze();
 
-    RPN& get_rpn() { return rpn; }
+    std::shared_ptr<RPN> get_rpn() { return rpn; }
 
     const std::unordered_map<std::string, variable>& get_variables() const { return variables; }
 };

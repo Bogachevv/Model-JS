@@ -47,7 +47,7 @@ public:
 
     RPN_element& operator[](size_t pos) { return elements[pos]; }
 
-    void evaluate();
+    mjs_data* evaluate();
 
     std::vector<RPN_element>& get_elements() { return elements; }
 };

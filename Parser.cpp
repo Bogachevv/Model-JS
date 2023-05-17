@@ -13,7 +13,7 @@ struct parse_error : std::runtime_error{
     explicit parse_error(const std::string& msg) : std::runtime_error(msg) {}
 };
 
-parser::parser(const std::string& path) : lex(path), cur("") {
+parser::parser(const std::string& path) : lex(path), cur(""), rpn(std::make_shared<RPN>()) {
     cur = lex.get_lex();
     function_args_processing = false;
     arg_counter = 0;
@@ -53,7 +53,7 @@ bool parser::analyze() {
         std::cout << err.what() << std::endl;
         return false;
     }
-    rpn.push_elm({RPN_types::nop});
+    rpn->push_elm({RPN_types::nop});
     return true;
 }
 
@@ -91,12 +91,21 @@ void parser::Func() {
     if (cur.get_type() != lexeme_type::right_parenthesis) error();
     next();
 
-    functions.emplace(new_func->get_identifier(), new_func);
-
     std::cout << std::endl;
 
-    if (in_set(Scope_first(), cur.get_type())) Scope();
+    functions_rpn_stack.push(rpn); // hide main rpn to stack
+
+    rpn = std::make_shared<RPN>(); // create rpn for the new_func
+    if (in_set(Scope_first(), cur.get_type())) Scope(); // fill rpn for the new_func
     else error();
+    new_func->set_rpn(rpn);
+
+    rpn = functions_rpn_stack.top(); // get main rpn from stack
+    functions_rpn_stack.pop();
+
+#error 
+    //TODO: Change variables to function locals
+    functions.emplace(new_func->get_identifier(), new_func);
 }
 
 void parser::Oper() {
@@ -125,10 +134,10 @@ void parser::Var() {
 
     if (cur.get_type() == lexeme_type::assign){ // <Name> = <Expr>
         next();
-        rpn.push_elm({RPN_types::variable_ref, &(variables.find(name)->second)});
+        rpn->push_elm({RPN_types::variable_ref, &(variables.find(name)->second)});
         if (in_set(Expr_first(), cur.get_type())) Expr();
         else error();
-        rpn.push_elm({RPN_types::assign});
+        rpn->push_elm({RPN_types::assign});
     }
 
     while (cur.get_type() == lexeme_type::comma){
@@ -144,10 +153,10 @@ void parser::Var() {
 
         if (cur.get_type() == lexeme_type::assign){ // <Name> = <Expr>
             next();
-            rpn.push_elm({RPN_types::variable_ref, &(variables.find(name)->second)});
+            rpn->push_elm({RPN_types::variable_ref, &(variables.find(name)->second)});
             if (in_set(Expr_first(), cur.get_type())) Expr();
             else error();
-            rpn.push_elm({RPN_types::assign});
+            rpn->push_elm({RPN_types::assign});
         }
     }
 
@@ -185,13 +194,13 @@ void parser::If() {
     if (cur.get_type() != lexeme_type::right_parenthesis) error();
     next();
 
-    auto jump_else = rpn.push_elm({RPN_types::jump_false}); // label added later
+    auto jump_else = rpn->push_elm({RPN_types::jump_false}); // label added later
 
     if (in_set(Oper_first(), cur.get_type())) Oper();
     else error();
 
-    auto jump_end = rpn.push_elm({RPN_types::jump}); // label added later
-    rpn[jump_else].label = jump_end + 1; //add label to jump_else
+    auto jump_end = rpn->push_elm({RPN_types::jump}); // label added later
+    (*rpn)[jump_else].label = jump_end + 1; //add label to jump_else
 
     if (cur.get_type() == lexeme_type::mjs_else){
         next();
@@ -199,7 +208,7 @@ void parser::If() {
         else error();
     }
 
-    rpn[jump_end].label = rpn.get_last_elm() + 1; //add label to jump_end
+    (*rpn)[jump_end].label = rpn->get_last_elm() + 1; //add label to jump_end
 }
 
 void parser::Loop() {
@@ -219,16 +228,16 @@ void parser::process_while() {
     next();
     if (cur.get_type() != lexeme_type::left_parenthesis) error();
     next();
-    auto loop_cond = rpn.get_last_elm();
+    auto loop_cond = rpn->get_last_elm();
     if (in_set(Expr_first(), cur.get_type())) Expr();
     else error();
     if (cur.get_type() != lexeme_type::right_parenthesis) error();
     next();
-    auto on_false_jump = rpn.push_elm({RPN_types::jump_false});
+    auto on_false_jump = rpn->push_elm({RPN_types::jump_false});
     if (in_set(Oper_first(), cur.get_type())) Oper();
     else error();
-    rpn.push_elm({RPN_types::jump, nullptr, nullptr, nullptr, loop_cond});
-    rpn[on_false_jump].label = rpn.get_last_elm() + 1;
+    rpn->push_elm({RPN_types::jump, nullptr, nullptr, nullptr, loop_cond});
+    (*rpn)[on_false_jump].label = rpn->get_last_elm() + 1;
 }
 
 void parser::process_for() {
@@ -243,7 +252,7 @@ void parser::process_for() {
         next();
     } else next();
 
-    size_t expr_2_pos = rpn.get_last_elm() + 1;
+    size_t expr_2_pos = rpn->get_last_elm() + 1;
     if (cur.get_type() != lexeme_type::semicolon){ //Expr2
         if (in_set(Expr_first(), cur.get_type())) Expr();
         else error();
@@ -251,13 +260,13 @@ void parser::process_for() {
         next();
     } else{
         next();
-        rpn.push_elm({RPN_types::nop});
+        rpn->push_elm({RPN_types::nop});
     }
 
-    auto jump_to_oper = rpn.push_elm({RPN_types::jump_true});
-    auto jump_to_end = rpn.push_elm({RPN_types::jump});
+    auto jump_to_oper = rpn->push_elm({RPN_types::jump_true});
+    auto jump_to_end = rpn->push_elm({RPN_types::jump});
 
-    size_t expr_3_pos = rpn.get_last_elm() + 1;
+    size_t expr_3_pos = rpn->get_last_elm() + 1;
     if (cur.get_type() != lexeme_type::right_parenthesis){ //Expr3
         if (in_set(Expr_first(), cur.get_type())) Expr();
         else error();
@@ -265,22 +274,22 @@ void parser::process_for() {
         next();
     } else{
         next();
-        rpn.push_elm({RPN_types::nop});
+        rpn->push_elm({RPN_types::nop});
     }
 
-    rpn.push_elm({RPN_types::jump, nullptr, nullptr, nullptr, expr_2_pos});
+    rpn->push_elm({RPN_types::jump, nullptr, nullptr, nullptr, expr_2_pos});
 
-    rpn[jump_to_oper].label = rpn.get_last_elm()+1;
+    (*rpn)[jump_to_oper].label = rpn->get_last_elm()+1;
     if (in_set(Oper_first(), cur.get_type())) Oper();
     else error();
 
-    rpn.push_elm({RPN_types::jump, nullptr, nullptr, nullptr, expr_3_pos});
-    rpn[jump_to_end].label = rpn.get_last_elm()+1;
+    rpn->push_elm({RPN_types::jump, nullptr, nullptr, nullptr, expr_3_pos});
+    (*rpn)[jump_to_end].label = rpn->get_last_elm()+1;
 }
 
 void parser::process_do() {
     next();
-    size_t loop_begin = rpn.get_last_elm()+1;
+    size_t loop_begin = rpn->get_last_elm()+1;
 
     if (in_set(Oper_first(), cur.get_type())) Oper();
     else error();
@@ -291,7 +300,7 @@ void parser::process_do() {
     next();
     if (in_set(Expr_first(), cur.get_type())) Expr();
     else error();
-    auto jump_end = rpn.push_elm({RPN_types::jump_true,
+    auto jump_end = rpn->push_elm({RPN_types::jump_true,
                                   nullptr, nullptr, nullptr,
                                   loop_begin});
     if (cur.get_type() != lexeme_type::right_parenthesis) error();
@@ -306,11 +315,11 @@ void parser::Jump() {
         case lexeme_type::mjs_break:
             next();
             if (break_iterators.empty()) error("Can't break non-existent cycle");
-            rpn.push_elm({RPN_types::jump, nullptr, nullptr, nullptr, break_iterators.top()});
+            rpn->push_elm({RPN_types::jump, nullptr, nullptr, nullptr, break_iterators.top()});
             break;
         case lexeme_type::mjs_continue:
             if (continue_iterators.empty()) error("Can't continue non-existent cycle");
-            rpn.push_elm({RPN_types::jump, nullptr, nullptr, nullptr, continue_iterators.top()});
+            rpn->push_elm({RPN_types::jump, nullptr, nullptr, nullptr, continue_iterators.top()});
             next();
             break;
         case lexeme_type::mjs_return:
@@ -329,7 +338,7 @@ void parser::Jump() {
 void parser::OpExpr() {
     if (in_set(Expr_first(), cur.get_type())) Expr();
     else error();
-    rpn.push_elm({RPN_types::pop});
+    rpn->push_elm({RPN_types::pop});
 }
 
 void parser::Const() {
@@ -354,7 +363,7 @@ void parser::Const() {
         default:
             error();
     }
-    rpn.push_elm({RPN_types::constant, nullptr, nullptr, c});
+    rpn->push_elm({RPN_types::constant, nullptr, nullptr, c});
 }
 
 void parser::Expr() {
@@ -378,7 +387,7 @@ void parser::E1() {
         next();
         if (in_set(E2_first(), cur.get_type())) E2();
         else error();
-        rpn.push_elm({RPN_types::assign});
+        rpn->push_elm({RPN_types::assign});
     }
 }
 
@@ -390,7 +399,7 @@ void parser::E2() {
         next();
         if (in_set(E3_first(), cur.get_type())) E3();
         else error();
-        rpn.push_elm({RPN_types::logical_or});
+        rpn->push_elm({RPN_types::logical_or});
     }
 }
 
@@ -402,7 +411,7 @@ void parser::E3() {
         next();
         if (in_set(E4_first(), cur.get_type())) E4();
         else error();
-        rpn.push_elm({RPN_types::logical_and});
+        rpn->push_elm({RPN_types::logical_and});
     }
 }
 
@@ -415,13 +424,13 @@ void parser::E4() {
             next();
             if (in_set(E5_first(), cur.get_type())) E5();
             else error();
-            rpn.push_elm({RPN_types::eq});
+            rpn->push_elm({RPN_types::eq});
             break;
         case lexeme_type::neq:
             next();
             if (in_set(E5_first(), cur.get_type())) E5();
             else error();
-            rpn.push_elm({RPN_types::neq});
+            rpn->push_elm({RPN_types::neq});
             break;
 
         default:
@@ -453,16 +462,16 @@ void parser::E5() {
     }
     switch (lt) {
         case lexeme_type::ls:
-            rpn.push_elm({RPN_types::ls});
+            rpn->push_elm({RPN_types::ls});
             break;
         case lexeme_type::le:
-            rpn.push_elm({RPN_types::le});
+            rpn->push_elm({RPN_types::le});
             break;
         case lexeme_type::gr:
-            rpn.push_elm({RPN_types::gr});
+            rpn->push_elm({RPN_types::gr});
             break;
         case lexeme_type::ge:
-            rpn.push_elm({RPN_types::ge});
+            rpn->push_elm({RPN_types::ge});
             break;
         default:
             break;
@@ -488,10 +497,10 @@ void parser::E6() {
 
     switch (lt) {
         case lexeme_type::plus:
-            rpn.push_elm({RPN_types::bin_plus});
+            rpn->push_elm({RPN_types::bin_plus});
             break;
         case lexeme_type::minus:
-            rpn.push_elm({RPN_types::bin_minus});
+            rpn->push_elm({RPN_types::bin_minus});
             break;
 
         default:
@@ -519,13 +528,13 @@ void parser::E7() {
 
     switch (lt) {
         case lexeme_type::mul:
-            rpn.push_elm({RPN_types::mul});
+            rpn->push_elm({RPN_types::mul});
             break;
         case lexeme_type::div:
-            rpn.push_elm({RPN_types::div});
+            rpn->push_elm({RPN_types::div});
             break;
         case lexeme_type::mod:
-            rpn.push_elm({RPN_types::mod});
+            rpn->push_elm({RPN_types::mod});
             break;
 
         default:
@@ -538,23 +547,23 @@ void parser::E8() {
     while (loop_cond){
         switch (cur.get_type()) {
             case lexeme_type::mjs_not:
-                rpn.push_elm({RPN_types::logical_not});
+                rpn->push_elm({RPN_types::logical_not});
                 next();
                 break;
             case lexeme_type::plus:
-                rpn.push_elm({RPN_types::un_plus});
+                rpn->push_elm({RPN_types::un_plus});
                 next();
                 break;
             case lexeme_type::minus:
-                rpn.push_elm({RPN_types::un_minus});
+                rpn->push_elm({RPN_types::un_minus});
                 next();
                 break;
             case lexeme_type::plus_plus:
-                rpn.push_elm({RPN_types::prefix_pp});
+                rpn->push_elm({RPN_types::prefix_pp});
                 next();
                 break;
             case lexeme_type::minus_minus:
-                rpn.push_elm({RPN_types::prefix_mm});
+                rpn->push_elm({RPN_types::prefix_mm});
                 next();
                 break;
             default:
@@ -573,11 +582,11 @@ void parser::E9() {
 
     switch (cur.get_type()) {
         case lexeme_type::plus_plus:
-            rpn.push_elm({RPN_types::postfix_pp});
+            rpn->push_elm({RPN_types::postfix_pp});
             next();
             break;
         case lexeme_type::minus_minus:
-            rpn.push_elm({RPN_types::postfix_mm});
+            rpn->push_elm({RPN_types::postfix_mm});
             next();
             break;
         default:
@@ -606,7 +615,7 @@ void parser::E10() {
                 next();
                 if (arg_counter == functions.find(name)->second->get_argc()){
                     //function call
-                    rpn.push_elm({RPN_types::function_ref, nullptr, functions.find(name)->second});
+                    rpn->push_elm({RPN_types::function_ref, nullptr, functions.find(name)->second});
                 }
                 else error("Arguments count mismatch: expected " +
                             std::to_string(functions.find(name)->second->get_argc()) +
@@ -626,7 +635,7 @@ void parser::E10() {
                 break;
             default:
                 if (variables.find(name) == variables.end()) error("Using undeclared variable " + name);
-                rpn.push_elm({RPN_types::variable_ref, &(variables.find(name)->second)});
+                rpn->push_elm({RPN_types::variable_ref, &(variables.find(name)->second)});
                 break;
         }
     }
