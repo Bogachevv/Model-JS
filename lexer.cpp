@@ -201,6 +201,9 @@ lexer::lexer(const std::string& path) : file(path){
     if (file.bad()) throw std::runtime_error("Can't open file");
     it = std::istreambuf_iterator<char>(file);
     seq_end = std::istreambuf_iterator<char>();
+    if (*it == '#'){
+        for (; (it != seq_end) and (*it != '\n'); ++it) {}
+    }
 }
 
 lexer::~lexer() {
@@ -213,6 +216,7 @@ lexeme lexer::get_lex() {
 
     state st = state::start;
     while ((not is_empty()) and ((*it == ' ') or (*it == '\n') or (*it == '\r'))) ++it;
+    if (is_empty()) return lexeme::eof;
     std::stringstream res;
 
     while (not is_empty()){ // lex processing loop

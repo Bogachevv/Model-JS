@@ -4,7 +4,6 @@
 #include "proprietary_functions.h"
 
 #include <stdexcept>
-#include <iostream>
 #include <algorithm>
 #include <vector>
 
@@ -74,13 +73,13 @@ void parser::Func() {
     auto new_func = new custom_function(cur.get_body(), 0);
     std::vector<std::string> formal_args;
     if (functions.find(cur.get_body()) != functions.end()) error("redefining a function");
-    std::cout << "Declaring function " << cur.get_body() << " with args: ";
+//    std::cout << "Declaring function " << cur.get_body() << " with args: ";
     next();
     if (cur.get_type() != lexeme_type::left_parenthesis) error();
     next();
 
     if (cur.get_type() == lexeme_type::identifier){
-        std::cout << cur.get_body();
+//        std::cout << cur.get_body();
         formal_args.push_back(cur.get_body());
         new_func->set_argc(new_func->get_argc() + 1);
         next();
@@ -90,7 +89,7 @@ void parser::Func() {
             if (cur.get_type() != lexeme_type::identifier) error();
             new_func->set_argc(new_func->get_argc() + 1);
             formal_args.push_back(cur.get_body());
-            std::cout << ", " << cur.get_body();
+//            std::cout << ", " << cur.get_body();
             next();
         }
 
@@ -100,7 +99,7 @@ void parser::Func() {
     if (cur.get_type() != lexeme_type::right_parenthesis) error();
     next();
 
-    std::cout << std::endl;
+//    std::cout << std::endl;
 
     functions_rpn_stack.push(rpn); // hide main rpn to stack
     functions_variables_stack.push(variables); //hide(copy) global variables to stack
@@ -618,7 +617,7 @@ void parser::E10() {
                 next();
                 //function call
                 if (functions.find(name) == functions.end()) error("Call undeclared function " + name);
-                else std::cout << "Call function " << name << std::endl;
+//                else std::cout << "Call function " << name << std::endl;
                 if (arg_counter != 0) {
                     arg_counter_stack.push(arg_counter);
                     arg_counter = 0;

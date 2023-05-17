@@ -24,6 +24,8 @@ namespace proprietary_functions{
         std::string key = args[0]->convert_to_string();
         auto env = std::getenv(key.c_str());
 
-        return new mjs_string(env);
+        if (env == nullptr){
+            return new mjs_string("");
+        }else return new mjs_string(env);
     }
 }

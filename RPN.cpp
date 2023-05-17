@@ -50,7 +50,6 @@ mjs_data* RPN::evaluate() {
                 exec_stack.push({elements[i].var_ref->data, elements[i].var_ref});
                 break;
             case RPN_types::function_ref:
-//                throw std::logic_error("Not implemented");
                 process_function_call(elements[i], exec_stack);
                 break;
             case RPN_types::constant:
